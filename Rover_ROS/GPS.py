@@ -53,9 +53,9 @@ class GPS(object):
 
                 A = np.cos(self.Lat_rad) * np.sin(delta_lambda0)
                 xi = 0.5 * np.log((1+A)/(1-A))
-                eta = np.arctan(np.tan(self.Lat_rad)/np.cos(delta_lambda0)) - s$
-                nu = (self.c*0.9996)/np.sqrt((1 + self.e2*np.cos(self.Lat_rad)*$
-                zeta = (self.e2/2)*(xi*xi)*(np.cos(self.Lat_rad)*np.cos(self.La$
+                eta = np.arctan(np.tan(self.Lat_rad)/np.cos(delta_lambda0)) - self.Lat_rad
+                nu = (self.c*0.9996)/np.sqrt((1 + self.e2*np.cos(self.Lat_rad)*np.cos(self.Lat_rad)))
+                zeta = (self.e2/2)*(xi*xi)*(np.cos(self.Lat_rad)*np.cos(self.Lat_rad))
                 A1 = np.sin(2.0*self.Lat_rad)
                 A2 = A1 * (np.cos(self.Lat_rad)*np.cos(self.Lat_rad))
                 J2 = self.Lat_rad + A1/2.0
@@ -64,7 +64,7 @@ class GPS(object):
                 alpha2 = (3.0/4.0)*(self.e2)
                 beta = (5.0/3.0)*(alpha2*alpha2)
                 gamma = (35.0/27.0)*(np.power(alpha2,2))
-                B_phi = 0.9996 * self.c * (self.Lat_rad - alpha2 * J2 + beta * $
+                B_phi = 0.9996 * self.c * (self.Lat_rad - alpha2 * J2 + beta * J4 - gamma * J6)
 
                 x = xi*nu*(1+zeta/3.0)+500000.0
                 y = eta*nu*(1+zeta)+B_phi
@@ -76,4 +76,3 @@ class GPS(object):
 if __name__ == '__main__':
     rospy.init_node('ubicacion',anonymous=True)
     cv = GPS()
-
