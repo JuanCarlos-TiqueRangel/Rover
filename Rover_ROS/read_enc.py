@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 import serial
 import rospy
-#import time, os, sys
-#import numpy as np
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 
