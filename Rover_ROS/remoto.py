@@ -8,13 +8,13 @@ from std_msgs.msg import Float32
 class RC(object):
     def __init__(self):
         # se define el puerto por el cual se va a realizar la comunicacion
-        self.ser = serial.Serial(
-            port='/dev/ttyACM0',
-            baudrate=115200,
-            parity=serial.PARITY_ODD,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS
-        )
+        #self.ser = serial.Serial(
+        #    port='/dev/ttyACM0',
+        #    baudrate=115200,
+        #    parity=serial.PARITY_ODD,
+        #    stopbits=serial.STOPBITS_ONE,
+        #    bytesize=serial.EIGHTBITS
+        #)
         self.pub = rospy.Publisher('/PWM', Float32, queue_size=10)
         self.A = 0
         self.g = 0
@@ -26,12 +26,13 @@ class RC(object):
         GPIO.setup(18, GPIO.IN)
         GPIO.setup(24, GPIO.IN)
         GPIO.setup(13, GPIO.OUT)
-        GPIO.setup(16, GPIO.OUT)
+        GPIO.setup(12, GPIO.OUT)
 
-        self.M1 = GPIO.PWM(13, 1000)
-        self.M2 = GPIO.PWM(16, 1000)
-        self.M1.start(0)
+        self.M1 = GPIO.PWM(13, 100) # Declaracion de PINS de PWM a una frecuencia de 1kHZ
+        self.M2 = GPIO.PWM(12, 100)
+        self.M1.start(0) # Inicializa el Pin
         self.M2.start(0)
+        #rospy.spin()
 
     def stop(self):
         while True:
@@ -82,37 +83,53 @@ class RC(object):
                 duration = end - start      #seconds to run for loop
                 tiempo = fin - inicio
 
-                A = duration
-                B = tiempo
+                A = duration    #channel Throttle
 
+                #print "A: %s" % A
+                #print "\t"
+                #print "B: %s" % B
 
                 #Ecuaciones para linealizar y aplicar un PWM de 0 a 100
                 # A cada motor
-                A = (0.00208-A)/0.0011 * 200.0 - 100.0
-                B = (B - 0.00111)/0.0008 * 800.0 - 400.0
+                A = (0.0021-A)/0.00111 * 100
+                B = (B - 0.00112)/0.0008 * 100
 
-                WR = A*0.4 + (B*0.4*0.6)/2 + 50
-                WL = A*0.4 - (B*0.4*0.6)/2 + 50
+                #A = (A-0.00099)/0.0011 *100 #200.0 - 100.0
+                #B = (0.00192-B)/0.0008 *100 #800.0 - 400.0
 
-                print WR
-                print "\t"
-                print WL
+                #WR = A*0.4 - (B*0.4*0.6)/2 + 50
+                #WL = A*0.4 - (B*0.4*0.6)/2 + 50
+
+                WR=B
+                WL=A
+
+                #print "WL: %s" % WL
+                #print "\t"
+                #print "WR: %s" % WR
 
                 # saturacion para que los motores no reciban valores >100 y <0.0
-                if WR > 100.0:
-                        WR = 100.0
+                if WR > 99.9:
+                        WR = 99.9
 
-                if WR < 0.0:
-                        WR = 0.0
+                if WR < 0.1:
+                        WR = 0.1
 
-                if WL > 100.0:
-                        WL = 100.0
+                if WL > 99.9:
+                        WL = 99.9
 
-                if WL < 0.0:
-                        WL = 0.0
+                if WL < 0.1:
+                        WL = 0.1
 
-                self.M1.ChangeDutyCycle(WR)
-                self.M2.ChangeDutyCycle(WL)
+                self.M1.ChangeDutyCycle(WL)     # Motor Izquierdo
+                self.M2.ChangeDutyCycle(WR)     # Motor Derecho
+
+                self.pub.publish(WL)
+                self.pub.publish(WR)
+
+                #print "WL: %s" % WL
+                #print "\t"
+                #print "WR: %s" % WR
+
 
     def control(self):
         while True:
@@ -124,7 +141,6 @@ class RC(object):
                 modo = B-A
 
                 if 0.0021 > modo > 0.0019:
-                         self.stop()
 
                 if 0.0016 > modo > 0.0014:
                          self.rc()
@@ -153,4 +169,4 @@ if __name__== '__main__':
                 cv.control()
 
     except KeyboardInterrupt:
-        print "closed"
+                    
