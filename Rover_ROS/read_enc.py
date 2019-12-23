@@ -35,15 +35,17 @@ class roboteq(object):
                 self.Ts_roboteq = 0.0
 
                 self.read_roboteq()
-                rospy.spin()
+                #rospy.spin()
+                #self.rate = rospy.Rate(10)
 
         def read_roboteq(self):
                 while True:
                         if self.driver.isOpen():
+                                self.driver.write("EELD\r")
                                 odome = self.driver.readline()
                                 data = odome.split(",")
                                 odom = Odometry()
-                                #print data
+                                #print odome
 
                                 if len(data) == 8:
                                         #Battery Voltage
@@ -78,13 +80,15 @@ class roboteq(object):
                                         odom.pose.covariance[6] = int(self.enc_right) # pulsos enc derecho
                                         odom.pose.covariance[7] = int(self.counter) # contador del programa
 
+                                odom.header.stamp = rospy.get_rostime()
                                 self.pub.publish(odom)
+                                #self.rate.sleep()
                                 #print self.enc_left
 
 if __name__=='__main__':
         try:
                 rospy.init_node('Odometria',anonymous=True, disable_signals=True)
+                print "Nodo creado"
                 cv = roboteq()
         except rospy.ROSInterruptException:
                 pass
-
