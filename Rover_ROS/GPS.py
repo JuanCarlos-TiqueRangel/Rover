@@ -2,12 +2,16 @@ import serial
 import time
 import rospy
 import numpy as np # se emplea esta para operar matrices
-from std_msgs.msg import Float64
+from std_msgs.msg import Float32
+from nav_msgs.msg import Odometry
+from std_msgs.msg import String
+
+msg = Odometry()
 
 class GPS(object):
 
     def __init__(self):
-        self.gps = serial.Serial("/dev/ttyUSB1", baudrate = 115200)
+        self.gps = serial.Serial("/dev/tty_gps", baudrate = 115200)
         self.line = 0
         self.data = 0
 
@@ -22,14 +26,14 @@ class GPS(object):
         self.Long_rad = 0
         self.Lat_rad = 0
 
-        self.pub = rospy.Publisher('/gps', Float64, queue_size=10)
+        self.pub = rospy.Publisher('/gps', Odometry, queue_size=10)
+        print "Nodo Creado"
         self.ubicacion()
 
     def ubicacion(self):
         while True:
             self.line = self.gps.readline()
             self.data = self.line.split(",")
-
             if self.data[0] == "$GPRMC":
                 Latitude = float(self.data[3])/100
                 Longitude = -float(self.data[5])/100
@@ -69,8 +73,15 @@ class GPS(object):
                 x = xi*nu*(1+zeta/3.0)+500000.0
                 y = eta*nu*(1+zeta)+B_phi
 
-                self.pub.publish(float(x))
-                self.pub.publish(float(y))
+                msg.header.stamp = rospy.get_rostime()
+                msg.pose.pose.position.x = x
+                msg.pose.pose.position.y = y
+
+                self.pub.publish(msg)
+
+                #print float(x)
+                #print " "
+                #print float(y)
 
 
 if __name__ == '__main__':
