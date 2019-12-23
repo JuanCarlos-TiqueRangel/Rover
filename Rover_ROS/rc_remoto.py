@@ -4,6 +4,9 @@ import RPi.GPIO as GPIO
 import time
 import serial
 from std_msgs.msg import Float32
+from sensor_msgs.msg import JointState
+
+msg = JointState()
 
 class RC(object):
     def __init__(self):
@@ -15,7 +18,7 @@ class RC(object):
         #    stopbits=serial.STOPBITS_ONE,
         #    bytesize=serial.EIGHTBITS
         #)
-        self.pub = rospy.Publisher('/PWM', Float32, queue_size=10)
+        self.pub = rospy.Publisher('/PWM', JointState, queue_size=10)
         self.A = 0
         self.g = 0
         self.comienzo = 0.0
@@ -32,7 +35,7 @@ class RC(object):
         self.M2 = GPIO.PWM(12, 100)
         self.M1.start(0) # Inicializa el Pin
         self.M2.start(0)
-        #rospy.spin()
+        self.rate = rospy.Rate(25)
 
     def stop(self):
         while True:
@@ -84,6 +87,7 @@ class RC(object):
                 tiempo = fin - inicio
 
                 A = duration    #channel Throttle
+                B = tiempo      #channel Steering
 
                 #print "A: %s" % A
                 #print "\t"
@@ -123,13 +127,15 @@ class RC(object):
                 self.M1.ChangeDutyCycle(WL)     # Motor Izquierdo
                 self.M2.ChangeDutyCycle(WR)     # Motor Derecho
 
-                self.pub.publish(WL)
-                self.pub.publish(WR)
+                msg.header.stamp = rospy.get_rostime()
+                msg.velocity = [WL,WR]
+
+                self.pub.publish(msg)
+                self.rate.sleep()
 
                 #print "WL: %s" % WL
                 #print "\t"
                 #print "WR: %s" % WR
-
 
     def control(self):
         while True:
@@ -141,6 +147,7 @@ class RC(object):
                 modo = B-A
 
                 if 0.0021 > modo > 0.0019:
+                         self.stop()
 
                 if 0.0016 > modo > 0.0014:
                          self.rc()
@@ -150,6 +157,7 @@ class RC(object):
 if __name__== '__main__':
     try:
         rospy.init_node('remoto',anonymous=True, disable_signals=True)
+        print "Nodo creado"
         cv = RC()
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(24, GPIO.IN)
@@ -169,4 +177,5 @@ if __name__== '__main__':
                 cv.control()
 
     except KeyboardInterrupt:
-                    
+        GPIO.cleanup()
+        print "closed"
