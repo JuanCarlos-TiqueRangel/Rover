@@ -47,6 +47,7 @@ class ubication(object):
                 odom.twist.twist.angular.y = self.Rpm_right # Velocidad angular motor derecho
                 odom.twist.twist.linear.y = vel_right # velocidad lineal motor derecho
 
+                odom.header.stamp = rospy.get_rostime()
                 self.pub.publish(odom)
 
 if __name__=='__main__':
