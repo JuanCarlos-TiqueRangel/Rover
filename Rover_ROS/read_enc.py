@@ -1,94 +1,91 @@
 #! /usr/bin/env python
 import serial
 import rospy
-from std_msgs.msg import String
-from nav_msgs.msg import Odometry
+from sensor_msgs.msg import JointState
+
+msg = JointState()
 
 class roboteq(object):
         def __init__(self):
                 # se define el puerto de lectura
                 self.driver = serial.Serial(
                                 port = "/dev/ttyACM0",
-                                baudrate=115200,
-                                parity=serial.PARITY_ODD,
-                                stopbits=serial.STOPBITS_ONE,
-                                bytesize=serial.EIGHTBITS
-                                )
+                                baudrate=115200)
+                                #parity=serial.PARITY_ODD,
+                                #stopbits=serial.STOPBITS_ONE,
+                                #bytesize=serial.EIGHTBITS
+                                #)
 
-                self.pub = rospy.Publisher('/enc_data', Odometry, queue_size=10)
+		#self.driver.write("EELD\r")
 
-                #Batery voltage
-                self.voltage_battery = 0.0
+                self.pub = rospy.Publisher('/enc_data', JointState, queue_size=10)
 
-                #Temperature motors
-                self.T_left = 0
-                self.T_right = 0
+		#Batery voltage
+		self.voltage_battery = 0.0
 
-                #Current motors
-                self.I_left = 0.0
-                self.I_right = 0.0
+		#Temperature motors
+		self.T_left = 0.0
+		self.T_right = 0.0
 
-                #Encoders data
-                self.enc_left = 0
-                self.enc_right = 0
-                self.counter = 0
-                self.Ts_roboteq = 0.0
+		#Current motors
+		self.I_left = 0.0
+		self.I_right = 0.0
 
-                self.read_roboteq()
-                #rospy.spin()
-                #self.rate = rospy.Rate(10)
+		#Encoders data
+                self.enc_left = 0.0
+                self.enc_right = 0.0
+
+
+		self.counter = 0.0
+		self.Ts_roboteq = 0.0
+
+		#self.rate = rospy.Rate(10)
+                #self.read_roboteq()
 
         def read_roboteq(self):
-                while True:
-                        if self.driver.isOpen():
-                                self.driver.write("EELD\r")
-                                odome = self.driver.readline()
-                                data = odome.split(",")
-                                odom = Odometry()
-                                #print odome
+		while not rospy.is_shutdown():
+                	if self.driver.isOpen():
+				self.driver.write("EELD\r")
+				odome = self.driver.readline()
+				data = odome.split(",")
+				#print odome
+				if len(data) == 8:
+					#Battery Voltage
+					battery = data[0]
+					b_battery = battery.split("A")
+					self.voltage_battery = b_battery[1]
 
-                                if len(data) == 8:
-                                        #Battery Voltage
-                                        battery = data[0]
-                                        b_battery = battery.split("A")
-                                        self.voltage_battery = b_battery[1]
+					#Motor temperature
+					self.T_left = data[2]
+					self.T_right = data[1]
 
-                                        #Motor temperature
-                                        self.T_left = int(data[2])
-                                        self.T_right = int(data[1])
+                                	#Motor current
+                                	self.I_left = data[4]
+                                	self.I_right = data[3]
 
-                                        #Motor current
-                                        self.I_left = int(data[4])
-                                        self.I_right = int(data[3])
+					#pulses encoder
+					self.enc_left = float(data[6])
+					self.enc_right = float(data[5])
 
-                                        #pulses encoder
-                                        self.enc_left = int(data[6])
-                                        self.enc_right = float(data[5])
+					#Counter
+                                	counter = data[7]
+                                	c_counter = counter.split("A")
+                                	self.counter = float(c_counter[0])
 
-                                        #Counter
-                                        counter = data[7]
-                                        c_counter = counter.split("A")
-                                        self.counter = c_counter[0]
-
-                                        #ubicate in odom matrix
-                                        odom.pose.covariance[0] = float(self.voltage_battery) # Voltaje de la bateria
-                                        odom.pose.covariance[1] = int(self.T_left) # Temperatura motor izquierdo
-                                        odom.pose.covariance[2] = int(self.T_right) # Temperatura motor derecho
-                                        odom.pose.covariance[3] = float(self.I_left) # Corriente motor izquierdo
-                                        odom.pose.covariance[4] = float(self.I_right) # Corriente motor izquierdo
-                                        odom.pose.covariance[5] = int(self.enc_left) # pulsos enc izquierdo
-                                        odom.pose.covariance[6] = int(self.enc_right) # pulsos enc derecho
-                                        odom.pose.covariance[7] = int(self.counter) # contador del programa
-
-                                odom.header.stamp = rospy.get_rostime()
-                                self.pub.publish(odom)
-                                #self.rate.sleep()
-                                #print self.enc_left
+				#ubicate in jointstate vector
+				msg.velocity = [self.enc_left, self.enc_right, self.counter]
+				msg.header.stamp = rospy.get_rostime()
+                                self.pub.publish(msg)
+				#self.rate.sleep()
+                                	#print self.enc_right
 
 if __name__=='__main__':
-        try:
-                rospy.init_node('Odometria',anonymous=True, disable_signals=True)
-                print "Nodo creado"
-                cv = roboteq()
-        except rospy.ROSInterruptException:
-                pass
+
+       	try:
+               	rospy.init_node('Odometria',anonymous=True, disable_signals=True)
+		print "Nodo ENCODERS creado"
+               	cv = roboteq()
+		cv.read_roboteq()
+       	except rospy.ROSInterruptException:
+               	pass
+
