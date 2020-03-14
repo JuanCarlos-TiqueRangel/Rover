@@ -25,6 +25,7 @@ setcommand(_GO, 2, AIL)		'set the pwm or signal to move a motor from RC control
 cont = cont +1		' counter of program
 
 'print(TapeDetect,"$",TapeLeft,"$",TapeRight,"$",LeftMarker,"$",RightMarker,"\r") ' prints back the queried data
-print("[",Battery,",",IR,",",IL,",",EncR,",",EncL,",",cont,",",Throttle,",",AIL,"]","\r") ' prints back the queried data
+print(Battery,",",IR,",",IL,",",EncR,",",EncL,",",cont,"\r\n") ' prints back the queried data
+
 wait(50) ' pause 10 mS
 goto top ' return to label header
