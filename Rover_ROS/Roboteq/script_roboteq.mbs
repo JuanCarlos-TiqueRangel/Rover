@@ -1,0 +1,30 @@
+' This script is provided "as-is", without warranty of any kind,
+' expressed or implied, including but not limited to the warranties of
+' merchatability, fitness for a particular purpose and
+' noninfringemement. In no event shall Roboteq be liable for any claim,
+' damages or other liability, arising from the use of the software."
+'
+' Script runs in HDC2450 driver for a Rover of Universidad de Ibague
+
+'print("starting ... \r")
+cont = 0
+
+top: ' label header
+
+Battery = getvalue(_AI, 3)	' queries the tape data
+IR = getvalue(_A, 2)*-1	'read the current of motor right 
+IL = getvalue(_A, 1)*-1	'read the current of motor left
+EncR = getvalue(_C,2)	'read the enc right
+EncL = getvalue(_C,1)	'read the enc left
+Throttle = getvalue(_PLSINC, 1)	'read the ch Throttle of RC control
+AIL = getvalue(_PLSINC, 2)	'read the ch AIL of RC control
+
+setcommand(_GO, 1, Throttle)	'set the pwm or signal to move a motor from RC control
+setcommand(_GO, 2, AIL)		'set the pwm or signal to move a motor from RC control
+
+cont = cont +1		' counter of program
+
+'print(TapeDetect,"$",TapeLeft,"$",TapeRight,"$",LeftMarker,"$",RightMarker,"\r") ' prints back the queried data
+print("[",Battery,",",IR,",",IL,",",EncR,",",EncL,",",cont,",",Throttle,",",AIL,"]","\r") ' prints back the queried data
+wait(50) ' pause 10 mS
+goto top ' return to label header
