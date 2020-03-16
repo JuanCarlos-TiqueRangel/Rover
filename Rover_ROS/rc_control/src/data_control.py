@@ -53,6 +53,7 @@ class RC(object):
 		x = 1
 
 	def Throttle(self, th, st, ax):
+		#print st
 
 		if 2000 < diff_A < 2100:
 			self.stop()
@@ -98,7 +99,7 @@ class RC(object):
 		self.refT = th
 		self.refS = st
 
-		#print str(RC1) + "\t" + str(RC2)
+		print str(RC1) + "\t" + str(RC2)
 		#print RC2
 
 	def automatico(self):

@@ -1,19 +1,34 @@
+# if you have this error 'device reports readiness to read but returned no data '
+#serial.serialutil.SerialException: device reports readiness to read but returned
+# no data (device disconnected or multiple access on port?
+
+# run this command
+
 import serial
 import time
+from subprocess import call
 import rospy
 import numpy as np # se emplea esta para operar matrices
 from nav_msgs.msg import Odometry
 
 msg = Odometry()
 
+gps = serial.Serial(
+		port = "/dev/tty_gps",
+		baudrate = 9600,
+                parity=serial.PARITY_ODD,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS,
+                timeout = 3.0)
+
 class GPS(object):
 
         def __init__(self):
-		self.MeasureCounting = 0
+                self.gps = gps
 
-		self.distance = 0
+                self.MeasureCounting = 0
+                self.distance = 0
 
-                self.gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
 		self.pub = rospy.Publisher('/gps_dis', Odometry, queue_size=10)
 		self.ubicacion()
 
@@ -27,6 +42,7 @@ class GPS(object):
                 return Time_seconds
 
         def ubicacion(self):
+		#print self.gps
 		if self.gps.isOpen():
 			k =0
 			while True:
@@ -53,12 +69,18 @@ class GPS(object):
 				msg.pose.pose.position.x = self.distance
 				self.pub.publish(msg)
 
-
 if __name__ == '__main__':
         try:
                 rospy.init_node('distancia', anonymous=True, disable_signals=True)
                 print "Nodo GPS creado"
                 cv = GPS()
+
         except rospy.ROSInterruptException:
-                pass
+                gps.close()
+
+	#except serial.serialutil.SerialException:
+	#	try:
+
+
+
 

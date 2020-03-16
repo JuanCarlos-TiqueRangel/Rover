@@ -6,10 +6,13 @@ from nav_msgs.msg import Odometry
 
 msg = Odometry()
 
+gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
+
+
 class GPS(object):
 
     	def __init__(self):
-        	self.gps = serial.Serial("/dev/ttyUSB1", baudrate = 9600)
+        	self.gps = gps #serial.Serial("/dev/tty_gps", baudrate = 9600)
         	self.line = 0
         	self.data = 0
 
@@ -26,7 +29,7 @@ class GPS(object):
 
         	self.pub = rospy.Publisher('/gps', Odometry, queue_size=10)
 
-		self.rate = rospy.Rate(10)
+		#self.rate = rospy.Rate(10)
         	self.ubicacion()
 
 	def ubicacion(self):
@@ -78,11 +81,11 @@ class GPS(object):
 					msg.pose.pose.position.y = y
 
                 			self.pub.publish(msg)
-					self.rate.sleep()
+					#self.rate.sleep()
 
-					#print float(x)
-					#print " "
-					#print float(y)
+					print float(x)
+					print " "
+					print float(y)
 
 
 if __name__ == '__main__':
@@ -92,3 +95,6 @@ if __name__ == '__main__':
     		cv = GPS()
         except rospy.ROSInterruptException:
                 pass
+
+	except rospy.exceptions.ROSInterruptException(“ROS shutdown request”):
+		gps.close()

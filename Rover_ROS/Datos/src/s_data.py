@@ -12,7 +12,7 @@ class adq_datos(object):
                 self.datos = [0,0,0,0,0,0]
 
                 rospy.Subscriber('/yaw', Odometry, self.synchronize_imu)
-                rospy.Subscriber('/PWM', JointState, self.synchronize_pwm)
+                rospy.Subscriber('/main_node', JointState, self.synchronize_pwm)
                 rospy.Subscriber('/Position', Odometry, self.synchronize_pos)
                 rospy.Subscriber('/gps_dis', Odometry, self.synchronize_gps)
 
@@ -29,7 +29,6 @@ class adq_datos(object):
 
 	def synchronize_gps(self, gps):
                 self.datos[5] = gps.pose.pose.position.x
-		#self.tiempo = rospy.get_rostime()
 
 	def w_data(self):
 		rate = rospy.Rate(10) # publish at 10hz
@@ -42,13 +41,13 @@ class adq_datos(object):
 			'\t'+format(self.datos[4])+'\t'+format(self.datos[5])+
 			'\t'+format(tiempo.nsecs/1000000)+'\n')
                 	f.close()
-			print tiempo.nsecs
+			print self.datos
 			rate.sleep()
 
 if __name__=='__main__':
         try:
                 rospy.init_node('save_data',anonymous=True, disable_signals=True)
-                print "Nodo Creado"
+                print "Nodo Datos Creado"
                 cv = adq_datos()
 		cv.w_data()
         except rospy.ROSInterruptException:

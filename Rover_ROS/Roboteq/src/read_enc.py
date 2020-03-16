@@ -18,59 +18,65 @@ class roboteq(object):
 
                 self.pub = rospy.Publisher('/enc_data', JointState, queue_size=10)
 
-                #Batery voltage
-                self.battery = 0.0
+		#Batery voltage
+		self.battery = 0.0
 
-                #Current motors
-                self.I_left = 0.0
-                self.I_right = 0.0
+		#Current motors
+		self.I_left = 0.0
+		self.I_right = 0.0
 
-                #Encoders data
+		#Encoders data
                 self.enc_left = 0.0
                 self.enc_right = 0.0
 
-                self.counter = 0.0
+		self.load_roboteq = 0
+
+		self.counter = 0.0
 
         def read_roboteq(self):
-                self.driver.write("EELD\r")
-                self.driver.write("!r\r")
 
-                while not rospy.is_shutdown():
-                        if self.driver.isOpen():
-                                odome = self.driver.readline()
-                                #print odome
-                                data = odome.split(",")
-                                #print len(data)
+		self.driver.write("EELD\r")
+		self.driver.write("!r\r")
 
-                                if len(data) == 6:
-                                        #Battery voltage
-                                        self.battery  = float(data[0])
+		while not rospy.is_shutdown():
+                	if self.driver.isOpen():
+				odome = self.driver.readline()
+				#print odome
+				data = odome.split(",")
+				#print len(data)
 
-                                        #Motor current
-                                        self.I_lefth = float(data[2])
-                                        self.I_right = float(data[1])
+				#data_ = data.index("EELD")
+				#print data_
 
-                                        #encoder pulses
-                                        self.enc_left = float(data[3])
-                                        self.enc_right = float(data[4])
+				if 'EELD' not in data[0] and len(data) == 6:
+					#Battery voltage
+					self.battery  = float(data[0])
 
-                                        #program counter
-                                        self.counter = int(data[5])
-                                        #print self.counter
+					#Motor current
+					self.I_lefth = float(data[2])
+					self.I_right = float(data[1])
 
-                                #ubicate in jointstate vector
-                                msg.velocity = [self.battery, self.I_left, self.I_right ,self.enc_left, self.enc_right, self.counter]
-                                msg.header.stamp = rospy.get_rostime()
+					#encoder pulses
+					self.enc_left = float(data[3])
+					self.enc_right = float(data[4])
+
+					#program counter
+					self.counter = int(data[5])
+					#print self.counter
+
+				#ubicate in jointstate vector
+				msg.velocity = [self.battery, self.I_left, self.I_right ,self.enc_left, self.enc_right, self.counter]
+				msg.header.stamp = rospy.get_rostime()
                                 self.pub.publish(msg)
-                                #self.rate.sleep()
+				#self.rate.sleep()
                                 #print msg
 
 if __name__=='__main__':
 
-        try:
-                rospy.init_node('Odometria',anonymous=True, disable_signals=True)
-                print "Nodo ENCODERS creado"
-                cv = roboteq()
-                cv.read_roboteq()
-        except rospy.ROSInterruptException:
-                pass
+       	try:
+               	rospy.init_node('Odometria',anonymous=True, disable_signals=True)
+		print "Nodo ENCODERS creado"
+               	cv = roboteq()
+		cv.read_roboteq()
+       	except rospy.ROSInterruptException:
+               	pass

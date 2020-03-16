@@ -40,7 +40,7 @@ class ubication(object):
 
         def read_enc(self,data):
 		odom = Odometry()
-		self.counter = data.velocity[2]
+		self.counter = data.velocity[5]
 		self.deltatiempo = self.counter - self.counter_1
 
 		if self.deltatiempo == 0:
@@ -49,11 +49,11 @@ class ubication(object):
 		# Angular Velocity rad/s and Lineal Velocity m/s
 		# 1500 son pulsos por RPM que tiene el encoder
 
-		self.W_Left = (data.velocity[0]-self.PL_1)*(2*np.pi)/(1500*self.enc_ts*self.deltatiempo)
-		self.W_Right = (data.velocity[1]-self.PR_1)*(2*np.pi)/(1500*self.enc_ts*self.deltatiempo)
+		self.W_Left = (data.velocity[3]-self.PL_1)*(2*np.pi)/(1500*self.enc_ts*self.deltatiempo)
+		self.W_Right = (data.velocity[4]-self.PR_1)*(2*np.pi)/(1500*self.enc_ts*self.deltatiempo)
 
 		#saturar la aceleracion
-		if abs(self.W_Left - self.W_Left_1) > 20.0 or abs(self.W_Right - self.W_Right_1) > 20.0:
+		if abs(self.W_Left - self.W_Left_1) > 25.0 or abs(self.W_Right - self.W_Right_1) > 25.0:
 			self.W_Left = self.W_Left_1
 			self.W_Right = self.W_Right_1
 
@@ -67,19 +67,22 @@ class ubication(object):
 		odom.twist.twist.angular.x = self.WL # Velocidad angular motor izquierdo
 		odom.twist.twist.angular.y = self.WR # Velocidad angular motor derecho
 
+                #odom.twist.twist.angular.x = self.WL*9.5492965855 # rpm motor izquierdo
+                #odom.twist.twist.angular.y = self.WR*9.5492965855 # rpm angular motor derecho
+
 		#odom.twist.twist.linear.x = vel_left # velocidad sin filtro
 		#odom.twist.twist.linear.y = vel_right # velocidad sin filtro
 
 		odom.header.stamp = rospy.get_rostime()
 		self.pub.publish(odom)
-
+		#print odom
 
 		#update variables
 		self.counter_1 = self.counter
 		self.deltatiempo_1 = self.deltatiempo
 
-		self.PL_1 =  data.velocity[0]
-		self.PR_1 = data.velocity[1]
+		self.PL_1 =  data.velocity[3]
+		self.PR_1 = data.velocity[4]
 
 		self.Left_1 = self.Left
 		self.Right_1 = self.Right
