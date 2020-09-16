@@ -37,17 +37,23 @@ class RC(object):
                 pi.set_mode(18, pigpio.INPUT)
 		pi.set_mode(4, pigpio.INPUT)
 
+		self.cont = 0
+
 	def ch(self, ax1, ax2, st, th):
 		self.ax1 = ax1
 		self.ax2 = ax2
 		self.st = st
 		self.th = th
 
-		#print self.ax2
+		#rate = rospy.Rate(10)
 
+		#while not rospy.is_shutdown():
+		#print self.ax1
 		msg.velocity = [self.ax1, self.ax2, self.st, self.th]
 		msg.header.stamp = rospy.get_rostime()
 		self.pub.publish(msg)
+
+		#rate.sleep()
 
 if __name__== '__main__':
 

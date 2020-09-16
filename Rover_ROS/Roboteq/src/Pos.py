@@ -5,9 +5,11 @@ import numpy as np
 from sensor_msgs.msg import JointState
 from nav_msgs.msg import Odometry
 
+odom = Odometry()
+
 class ubication(object):
         def __init__(self):
-                self.pub = rospy.Publisher('/Position', Odometry, queue_size=10)
+                self.pub = rospy.Publisher('/position', Odometry, queue_size=10)
 
 		self.enc_ts = 0.05
 
@@ -34,12 +36,20 @@ class ubication(object):
 		self.deltatiempo = 0.0
 		self.deltatiempo_1 = 0.0
 
+		self.SL = 0.0
+		self.SR = 0.0
+
+		self.PX = 0.0
+		self.PY = 0.0
+
+		self.theta = 0.0
+		self.yg = 0.38
+		self.delta_s = 0.0
+		self.base_width = 0.6
+
 		rospy.Subscriber('/enc_data', JointState, self.read_enc)
-		#self.rate = rospy.Rate(10)
-                rospy.spin()
 
         def read_enc(self,data):
-		odom = Odometry()
 		self.counter = data.velocity[5]
 		self.deltatiempo = self.counter - self.counter_1
 
@@ -63,19 +73,22 @@ class ubication(object):
 		self.WL = 0.2452*self.Left + 0.2452*self.Left_1 + 0.5095*self.WL
 		self.WR = 0.2452*self.Right + 0.2452*self.Right_1 + 0.5095*self.WR
 
-		#publish data
-		odom.twist.twist.angular.x = self.WL # Velocidad angular motor izquierdo
-		odom.twist.twist.angular.y = self.WR # Velocidad angular motor derecho
+		#DESPLAZAMIENTO
+		self.SL += (data.velocity[3]-self.PL_1)*(2*np.pi*0.2)/1500.0 #Desplazamiento ruedas izquierdas
+		self.SR += (data.velocity[4]-self.PR_1)*(2*np.pi*0.2)/1500.0 #Desplazamiento ruedas derechas
 
-                #odom.twist.twist.angular.x = self.WL*9.5492965855 # rpm motor izquierdo
-                #odom.twist.twist.angular.y = self.WR*9.5492965855 # rpm angular motor derecho
+		#POSICION
+		self.delta_s = (self.SR + self.SL)/2
+		#self.theta = (self.SR - self.SL)/self.yg
+		self.theta = (self.SR - self.SL)/self.base_width
 
-		#odom.twist.twist.linear.x = vel_left # velocidad sin filtro
-		#odom.twist.twist.linear.y = vel_right # velocidad sin filtro
+		while self.theta > np.pi:
+			self.theta -= np.pi
+		while self.theta < -np.pi:
+			self.theta += np.pi
 
-		odom.header.stamp = rospy.get_rostime()
-		self.pub.publish(odom)
-		#print odom
+		self.PX = self.delta_s * np.cos(self.theta + (self.SR - self.SL)/(2*self.yg))
+		self.PY = self.delta_s * np.sin(self.theta + (self.SR - self.SL)/(2*self.yg))
 
 		#update variables
 		self.counter_1 = self.counter
@@ -90,16 +103,36 @@ class ubication(object):
 		self.W_Left_1 = self.W_Left
 		self.W_Right_1 = self.W_Right
 
-		#print str(self.W_left) +"\t"+ str(self.W_left*9.5493)
-		#print "\t"
-		#print str(self.W_Right) + "\t" + str(self.W_Right_1) + '\t' + str(data.pose.covariance[6])
-		#print self.WL
+		#print self.WL*9.5493
+		#print self.WR*9.5493
+
+		#print ("POS_X",self.PX)
+		#print ("pos_Y",self.PY)
+		#print ("yaw",self.theta)
+		#print " "
+
+	def main(self):
+		rate = rospy.Rate(10)
+		while not rospy.is_shutdown():
+
+			odom.header.stamp = rospy.get_rostime()
+               		odom.twist.twist.angular.x = self.WL # Velocidad angular motor izquierdo
+               		odom.twist.twist.angular.y = self.WR # Velocidad angular motor derecho
+
+               		odom.pose.pose.position.x = self.PX #Posicion en x generada por los encoders
+                	odom.pose.pose.position.y = self.PY #Posicion en y generada por los encoders
+	               	odom.pose.pose.position.z = self.theta #Angulos generado por los encoders
+
+			self.pub.publish(odom)
+			rate.sleep()
+
 
 if __name__=='__main__':
         try:
                 rospy.init_node('Position',anonymous=True, disable_signals=True)
 		print "Nodo POS Creado"
                 cv = ubication()
+		cv.main()
         except rospy.ROSInterruptException:
                 pass
 

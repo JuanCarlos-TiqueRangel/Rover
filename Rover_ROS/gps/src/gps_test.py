@@ -3,16 +3,16 @@ import time
 import rospy
 import numpy as np # se emplea esta para operar matrices
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Vector3Stamped
 
-msg = Odometry()
+msg = Vector3Stamped()
 
-gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
-
+#gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
 
 class GPS(object):
 
     	def __init__(self):
-        	self.gps = gps #serial.Serial("/dev/tty_gps", baudrate = 9600)
+        	self.gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
         	self.line = 0
         	self.data = 0
 
@@ -27,17 +27,21 @@ class GPS(object):
         	self.Long_rad = 0
         	self.Lat_rad = 0
 
-        	self.pub = rospy.Publisher('/gps', Odometry, queue_size=10)
+        	self.pub = rospy.Publisher('/data_gps', Vector3Stamped, queue_size=10)
 
-		#self.rate = rospy.Rate(10)
-        	self.ubicacion()
 
 	def ubicacion(self):
-        	while True:
+
+		while not rospy.is_shutdown():
 	    		if self.gps.isOpen():
             			self.line = self.gps.readline()
             			self.data = self.line.split(",")
+
+				#if self.data[0] == "$GPGGA":
+				#	print self.data
+
             			if self.data[0] == "$GPRMC":
+
                 			Latitude = float(self.data[3])/100
                 			Longitude = -float(self.data[5])/100
 
@@ -77,15 +81,14 @@ class GPS(object):
                 			y = eta*nu*(1+zeta)+B_phi
 
 					msg.header.stamp = rospy.get_rostime()
-					msg.pose.pose.position.x = x
-					msg.pose.pose.position.y = y
+					msg.vector.x = x
+					msg.vector.y = y
 
-                			self.pub.publish(msg)
-					#self.rate.sleep()
+					self.pub.publish(msg)
 
-					print float(x)
-					print " "
-					print float(y)
+					#print x
+					#print y
+					#print " "
 
 
 if __name__ == '__main__':
@@ -93,8 +96,7 @@ if __name__ == '__main__':
 		rospy.init_node('ubicacion', anonymous=True, disable_signals=True)
 		print "Nodo GPS creado"
     		cv = GPS()
+		cv.ubicacion()
+
         except rospy.ROSInterruptException:
                 pass
-
-	except rospy.exceptions.ROSInterruptException(“ROS shutdown request”):
-		gps.close()

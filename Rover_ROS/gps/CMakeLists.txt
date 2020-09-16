@@ -11,6 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  genmsg
+  message_generation
+  sensor_msgs
+  nav_msgs
+  geometry_msgs
+  tf2_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -149,6 +155,10 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+add_executable(gps_rate src/gps_rate.cpp)
+add_dependencies(gps_rate ${gps_rate_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(gps_rate ${catkin_LIBRARIES})
 
 #############
 ## Install ##

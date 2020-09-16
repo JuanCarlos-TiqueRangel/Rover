@@ -78,5 +78,6 @@ if __name__=='__main__':
 		print "Nodo ENCODERS creado"
                	cv = roboteq()
 		cv.read_roboteq()
+
        	except rospy.ROSInterruptException:
                	pass

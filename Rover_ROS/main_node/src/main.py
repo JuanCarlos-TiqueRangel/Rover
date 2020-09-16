@@ -508,7 +508,7 @@ class adq_datos(object):
                 self.refT = self.th
                 self.refS = self.st
 
-                print str(self.RC1) + "\t" + str(self.RC2)
+                #print str(self.RC1) + "\t" + str(self.RC2)
                 #print RC2
 
 	def automatico(self):

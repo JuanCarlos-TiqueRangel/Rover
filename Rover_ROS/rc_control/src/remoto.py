@@ -301,8 +301,6 @@ class RC(object):
                 #print RC2
 
         def automatico(self, ax):
-		if
-
 		global cuenta
                 x = 1
                 pi.set_PWM_dutycycle(13, 92.0)

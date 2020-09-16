@@ -5,11 +5,11 @@ from sensor_msgs.msg import Imu, MagneticField, JointState
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from nav_msgs.msg import Odometry
 
-odom = Odometry()
+imu_node = Imu()
 
 class ubication(object):
         def __init__(self):
-                self.pub = rospy.Publisher('/yaw', Odometry, queue_size=10)
+                self.pub = rospy.Publisher('/yaw', Imu, queue_size=10)
 
 		#self.cuenta = 0
 
@@ -25,22 +25,19 @@ class ubication(object):
 		self.yaw_1 = 0
 		self.count = 0
 
+		self.mag_yaw = 0
+
+		#VARIABLE RORATION MATRIX
+		self.acc_x = 0
+		self.acc_y = 0
+		self.acc = np.zeros([2,1])
+		self.w = 0
+		self.RB = np.zeros([2,2])
+		self.RB_ = np.zeros([2,1])
+
                 rospy.Subscriber('/imu/mag', MagneticField, self.mag)
 		rospy.Subscriber('/imu/data', Imu, self.imu)
 		rospy.Subscriber('/main_node', JointState, self.calibration)
-                rospy.spin()
-
-	def imu(self, data):
-		orientation_q = data.orientation
-		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-		euler = euler_from_quaternion(orientation_list)
-		#self.yaw = (euler[2] + self.yaw_1)*(180/np.pi)
-		self.yaw = (euler[2])*(180/np.pi)
-		#print self.yaw
-
-                odom.pose.pose.position.x = self.yaw
-                odom.header.stamp = rospy.get_rostime()
-                self.pub.publish(odom)
 
         def mag(self, data):
 		x = data.magnetic_field.x
@@ -62,6 +59,8 @@ class ubication(object):
 		self.x = xsf*x + xoff
 		self.y = ysf*y + yoff
 
+		self.mag_yaw = np.arctan2(-self.y,self.x)
+
 		#if self.cuenta == 0:
 		#	self.yaw_1 = np.arctan2(-y, x)
 		#	self.cuenta = self.cuenta + 1
@@ -78,12 +77,50 @@ class ubication(object):
 			#self.calibration = []
 			print self.yaw_1*180/np.pi
 
+        def imu(self, data):
+                orientation_q = data.orientation
+		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+                euler = euler_from_quaternion(orientation_list)
+                #self.yaw = (euler[2] + self.yaw_1)*(180/np.pi)
+                self.yaw = euler[2]
+
+		#ROTATION MATRIX
+		self.acc_x = data.linear_acceleration.x
+		self.acc_y = data.linear_acceleration.y
+		self.acc = np.array([ [self.acc_x],[self.acc_y] ])
+
+		self.w = data.angular_velocity.z
+
+		self.RB = np.array([ [np.cos(self.yaw), -np.sin(self.yaw)],
+                                        [np.sin(self.yaw), np.cos(self.yaw)]  ])
+
+		self.RB_ = np.dot(self.RB, self.acc)
+
+
+	def main(self):
+		rate = rospy.Rate(10)
+		while not rospy.is_shutdown():
+
+			imu_node.header.frame_id = "NODE IMU ROTATE"
+			imu_node.header.stamp = rospy.get_rostime()
+
+			imu_node.orientation.x = self.yaw
+			imu_node.orientation.y = self.mag_yaw
+			imu_node.angular_velocity.z = self.w
+			imu_node.linear_acceleration.x = self.RB_[0,0]
+			imu_node.linear_acceleration.y = self.RB_[1,0]
+
+			self.pub.publish(imu_node)
+			rate.sleep()
+
 
 if __name__=='__main__':
         try:
                 rospy.init_node('Orientation',anonymous=True, disable_signals=True)
                 print "Nodo YAW Creado"
                 cv = ubication()
+		cv.main()
+
         except rospy.ROSInterruptException:
                 pass
 
