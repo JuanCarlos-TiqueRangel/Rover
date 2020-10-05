@@ -23,6 +23,8 @@ last_tick_A = None
 
 error_1 = 0
 
+init_topic = True
+
 class RC(object):
 
         def __init__(self):
@@ -48,6 +50,8 @@ class RC(object):
                 self.M1 = pi.hardware_PWM(12, 1000, 0)
                 self.M2 = pi.hardware_PWM(13, 1000, 0)
                 #self.rate = rospy.Rate(10)
+
+		self.init_topic = True
 
 	def stop(self):
 		x = 1
@@ -99,17 +103,16 @@ class RC(object):
 		self.refT = th
 		self.refS = st
 
-		print str(RC1) + "\t" + str(RC2)
-		#print RC2
+		#print str(RC1) + "\t" + str(RC2)
 
 	def automatico(self):
 		x = 1
 
 if __name__== '__main__':
 
-        while True:
+	while True:
 
-                try:
+		try:
                         rospy.init_node('remoto',anonymous=True, disable_signals=True)
                         cv = RC()
 
@@ -131,8 +134,6 @@ if __name__== '__main__':
 
 				if 1000 < diffA < 900:
 					cv.automatico()
-
-
 
 				# update the tick
 				last_tick_T = tick
@@ -161,6 +162,7 @@ if __name__== '__main__':
 			cb.cancel()
 			cb1.cancel()
 			cb2.cancel()
+
 
                 except rospy.ROSInterruptException:
                         #GPIO.cleanup()

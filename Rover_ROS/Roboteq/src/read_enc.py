@@ -52,6 +52,10 @@ class roboteq(object):
 					#Battery voltage
 					self.battery  = float(data[0])
 
+					#print data[0]
+					#if ValueError == True:
+					#	print data[0]
+
 					#Motor current
 					self.I_lefth = float(data[2])
 					self.I_right = float(data[1])
@@ -74,10 +78,18 @@ class roboteq(object):
 if __name__=='__main__':
 
        	try:
-               	rospy.init_node('Odometria',anonymous=True, disable_signals=True)
+               	rospy.init_node("ENCODERS_DATA")
 		print "Nodo ENCODERS creado"
                	cv = roboteq()
 		cv.read_roboteq()
 
        	except rospy.ROSInterruptException:
                	pass
+
+	except ValueError:
+                rospy.init_node('Encoders_data',anonymous=True, disable_signals=True)
+		print "ENTRO AL EXCEPT"
+                print "Nodo ENCODERS creado"
+                cv = roboteq()
+                cv.read_roboteq()
+

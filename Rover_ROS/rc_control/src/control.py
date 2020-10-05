@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import time
 import pigpio
 from sensor_msgs.msg import JointState
@@ -22,6 +22,8 @@ last_tick_T = None
 last_tick_S = None
 last_tick_A1 = None
 last_tick_A2 = None
+
+init_topic = True
 
 class RC(object):
 
@@ -45,22 +47,24 @@ class RC(object):
 		self.st = st
 		self.th = th
 
-		#rate = rospy.Rate(10)
-
+		#NO SE PUEDE USAR EL while not porque
+		#no deja actualizar las variables a publicar
 		#while not rospy.is_shutdown():
-		#print self.ax1
+
 		msg.velocity = [self.ax1, self.ax2, self.st, self.th]
 		msg.header.stamp = rospy.get_rostime()
 		self.pub.publish(msg)
-
-		#rate.sleep()
 
 if __name__== '__main__':
 
 	while True:
 		try:
-			rospy.init_node('remoto',anonymous=True, disable_signals=True)
+			rospy.init_node("RC_CONTROL")
 			cv = RC()
+
+                        if init_topic == True:
+                                print "Nodo LECTURA RC CHANNELS creado"
+                                init_topic = False
 
                         def AX1(gpio, level, tick):
                                 global last_tick_A1, diff_A1, diffA1, diff_A2, diffA2 ,diffS, diffT, diff_S, diff_T

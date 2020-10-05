@@ -2,10 +2,14 @@ import serial
 import time
 import rospy
 import numpy as np # se emplea esta para operar matrices
+
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped
+from gps_common.msg import GPSStatus, GPSFix
 
 msg = Vector3Stamped()
+gps = GPSFix()
+gps2 = GPSStatus()
 
 #gps = serial.Serial("/dev/tty_gps", baudrate = 9600)
 
@@ -27,8 +31,23 @@ class GPS(object):
         	self.Long_rad = 0
         	self.Lat_rad = 0
 
-        	self.pub = rospy.Publisher('/data_gps', Vector3Stamped, queue_size=10)
+		self.satelites = 0
+		self.altitude = 0.0
+		self.distance = 0.0
+		self.MeasureCounting = 0
+		self.time_utc = 0.0
+		self.speed_m_s = 0.0
 
+        	self.pub = rospy.Publisher('/gps/utm', Vector3Stamped, queue_size=10)
+		self.pub1 = rospy.Publisher('/gps/data', GPSFix, queue_size=10)
+
+	def GpsTimeSeconds(self, Time_Gps):
+		H = float(Time_Gps[0:2])
+		M = float(Time_Gps[2:4])
+		S = float(Time_Gps[4:9])
+
+		Time_seconds = H*3600 + M*60 + S
+		return Time_seconds
 
 	def ubicacion(self):
 
@@ -37,13 +56,31 @@ class GPS(object):
             			self.line = self.gps.readline()
             			self.data = self.line.split(",")
 
-				#if self.data[0] == "$GPGGA":
-				#	print self.data
+				if self.data[0] == "$GPGGA":
+					#print self.data
+					self.satelites = float(self.data[7])
+					self.altitude = float(self.data[9])
 
             			if self.data[0] == "$GPRMC":
 
-                			Latitude = float(self.data[3])/100
-                			Longitude = -float(self.data[5])/100
+                			Latitude = float(self.data[3])/100.0
+                			Longitude = -float(self.data[5])/100.0
+
+					## NUEVO ============================================
+					self.speed_m_s = float(self.data[7]) * 0.514444
+					self.time_utc = float(self.data[1])
+
+					if self.speed_m_s < 0.5:
+						self.speed_m_s = 0.0
+
+					self.MeasureCounting += 1
+					if self.MeasureCounting == 1:
+						t_0 = self.GpsTimeSeconds(self.data[1])
+					else:
+						t_1 = self.GpsTimeSeconds(self.data[1])
+						self.distance = (t_1 - t_0) * self.speed_m_s
+						t_0 = t_1
+					#FIN DE LO NUEVO =======================================
 
                 			self.Long_rad = Longitude * (np.pi/180.0)
                 			self.Lat_rad = Latitude * (np.pi/180.0)
@@ -80,11 +117,26 @@ class GPS(object):
                 			x = xi*nu*(1+zeta/3.0)+500000.0
                 			y = eta*nu*(1+zeta)+B_phi
 
+					# PUBLISH DATA
+					gps.header.stamp = rospy.get_rostime()
+					gps.header.frame_id = "GPS DATA"
+					gps.status.header.frame_id = "/GPS_DATA"
+					gps.latitude = Latitude
+					gps.longitude = Longitude
+					gps.altitude = self.altitude
+					gps.speed = self.speed_m_s
+					gps.status.satellites_used = self.satelites
+					gps.time = self.time_utc
+					gps.track = self.distance
+
 					msg.header.stamp = rospy.get_rostime()
 					msg.vector.x = x
 					msg.vector.y = y
+					msg.vector.z = self.satelites
 
 					self.pub.publish(msg)
+					self.pub1.publish(gps)
+					#print(gps)
 
 					#print x
 					#print y
@@ -93,7 +145,7 @@ class GPS(object):
 
 if __name__ == '__main__':
 	try:
-		rospy.init_node('ubicacion', anonymous=True, disable_signals=True)
+		rospy.init_node("GPS_DATA")
 		print "Nodo GPS creado"
     		cv = GPS()
 		cv.ubicacion()

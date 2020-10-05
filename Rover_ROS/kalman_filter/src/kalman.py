@@ -7,14 +7,13 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3Stamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-msg = Vector3Stamped()
+odom = Odometry()
 
 class Kalman(object):
 
 	def __init__(self):
 
-		self.pub = rospy.Publisher('kalman_filter', Vector3Stamped, queue_size=10)
-
+		self.pub = rospy.Publisher('kalman_filter', Odometry, queue_size=10)
 		self.ts = 0.1
 
 		#IMU VARIABLES
@@ -80,18 +79,18 @@ class Kalman(object):
 		self.I = np.identity(5)
 
 		#MATRIZ DE COVARIANCE
-		self.R = np.array([ [1.1011,0,0,0,0,0],
-					[0,0.7946,0,0,0,0],
+		self.R = np.array([ [1.5,0,0,0,0,0],
+					[0,1.5,0,0,0,0],
 					[0,0,0.0263,0,0,0],
-					[0,0,0,0.0740,0,0],
-					[0,0,0,0,0.1955,0],
+					[0,0,0,0.5,0,0],
+					[0,0,0,0,0.5,0],
 					[0,0,0,0,0,0] ])
 
-                self.Q = np.array([ [0.1,0,0,0,0],
-                                        [0,0.1,0,0,0],
+                self.Q = np.array([ [0.5,0,0,0,0],
+                                        [0,0.5,0,0,0],
                                         [0,0,0.01,0,0],
-                                        [0,0,0,0.01,0],
-                                        [0,0,0,0,0.01] ])
+                                        [0,0,0,0.5,0],
+                                        [0,0,0,0,0.5] ])
 		self.R1 = []
 
 		#VARIABLES ODOMETRIA
@@ -104,8 +103,10 @@ class Kalman(object):
 		#VARIABLES DEL MAG_YAW
 		self.mag_yaw = 0
 
+		self.samples = 0
+
 		rospy.Subscriber('/gps', Vector3Stamped, self.gps_data)
-		rospy.Subscriber('/position', Odometry, self.odometria)
+		rospy.Subscriber('/odom', Odometry, self.odometria)
 		rospy.Subscriber('/yaw', Imu, self.RB_imu)
 
 	def gps_data(self,data):
@@ -130,9 +131,9 @@ class Kalman(object):
 
 	def filter(self):
 		#ESTADO PREDICTOR
-		self.U = np.array([ [self.Acc_x],
-					[self.Acc_y],
-					[self.w] ])
+		self.U = np.array([ [self.w],
+					[self.Acc_x],
+					[self.Acc_y] ])
 
 		self.Xkp = np.dot(self.A,self.Xk_1) + np.dot(self.B,self.U)
 		self.Pkp = np.dot(np.dot(self.A,self.Pk_1),self.A.T) + self.Q
@@ -160,38 +161,45 @@ class Kalman(object):
 		self.Pk = np.dot(self.Pk1, self.Pkp)
 
 		#INICIALIZACION
-                if self.count == 5:
+                if self.count <= 6:
 			self.gps_0x = self.gps_x
 			self.gps_0y = self.gps_y
 
-                        self.Xk = np.array([ [self.gps_x - self.gps_0x],
-                                        [self.gps_y - self.gps_0y],
-                                        [self.mag_yaw],
-                                        [0],
-                                        [0] ])
+			self.Xk[0,0] = self.gps_x - self.gps_0x
+			self.Xk[1,0] = self.gps_y - self.gps_0y
+			self.Xk[2,0] = self.mag_yaw
 
 		self.count += 1
+
+		while self.Xk[2,0] > np.pi:
+			self.Xk[2,0] -= 2.0*np.pi
+
+		while self.Xk[2,0] < -np.pi:
+			self.Xk[2,0] += 2.0*np.pi
 
 		#ACTUALIZACION
 		self.Xk_1 = self.Xk
 		self.Pk_1 = self.Pk
 
-		print(self.Xk)
-		print " "
+		#print(self.Xk)
+		#print " "
 
 	def main(self):
 
-                rate = rospy.Rate(10)
+                rate = rospy.Rate(20)
                 while not rospy.is_shutdown():
 
 			self.filter()
 
-                        msg.header.stamp = rospy.get_rostime()
-                        msg.vector.x = self.Xk[0,0]
-                        msg.vector.y = self.Xk[1,0]
-			msg.vector.z = self.Xk[2,0]
+                        odom.header.stamp = rospy.get_rostime()
 
-			self.pub.publish(msg)
+			odom.header.frame_id = "KALMAN FILTER"
+			odom.pose.pose.position.x = self.Xk[0,0]
+			odom.pose.pose.position.y = self.Xk[1,0]
+			odom.pose.pose.position.z = self.Xk[2,0]
+			odom.twist.twist.angular.z = self.w
+
+			self.pub.publish(odom)
 
 			#print(self.odom_yaw)
 			#print " "
@@ -201,7 +209,7 @@ class Kalman(object):
 if __name__ == '__main__':
         try:
 
-                rospy.init_node('KF', anonymous=True, disable_signals=True)
+                rospy.init_node("Kalman_Filter")
                 print "Nodo kalman_filter creado"
                 cv = Kalman()
                 cv.main()

@@ -48,7 +48,7 @@ class GPS(object):
 			while True:
                 		self.line = self.gps.readline()
                        		data = self.line.split(",")
-				#print data
+				print self.line
 
                                 if (data[0] == "$GPRMC") and (data[2]=='A'):
 					self.MeasureCounting = self.MeasureCounting + 1

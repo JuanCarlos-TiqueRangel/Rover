@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 import rospy
 import numpy as np
-
 from sensor_msgs.msg import Imu, MagneticField, JointState
-from std_msgs.msg import String
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from nav_msgs.msg import Odometry
 
@@ -30,6 +28,8 @@ class ubication(object):
 		self.mag_yaw = 0
 
 		#VARIABLE RORATION MATRIX
+		self.acc_x = 0
+		self.acc_y = 0
 		self.acc = np.zeros([2,1])
 		self.w = 0
 		self.RB = np.zeros([2,2])
@@ -37,42 +37,13 @@ class ubication(object):
 
 		#VARIABLES FILTER IMU_ACC
 		self.accx = 0.0
-		self.accx_1 = 0.0
-		self.accx_2 = 0.0
-
 		self.accy = 0.0
-		self.accy_1 = 0.0
-		self.accy_2 = 0.0
-
-		self.acc_x = 0.0
 		self.acc_x_1 = 0.0
-		self.acc_x_2 = 0.0
-
-		self.acc_y = 0.0
 		self.acc_y_1 = 0.0
-		self.acc_y_2 = 0.0
-
-		#VARIABLES BIAS
-		self.free_acc_z = 0.0
-		self.free_acc_y = 0.0
-		self.free_acc_x = 0.0
 
                 rospy.Subscriber('/imu/mag', MagneticField, self.mag)
 		rospy.Subscriber('/imu/data', Imu, self.imu)
 		rospy.Subscriber('/main_node', JointState, self.calibration)
-		rospy.Subscriber('/imu_data_str', String, self.imu_bias)
-
-		self.rate = rospy.Rate(20)
-
-		#rospy.spin()
-
-	def imu_bias(self, free):
-		freeAcc = free.data
-		acc_ = freeAcc.split(",")
-
-		self.free_acc_z = float(acc_[4].split("freeAccZ")[1].split(":")[1])
-		self.free_acc_y = float(acc_[5].split("freeAccY")[1].split(":")[1])
-		self.free_acc_x = float(acc_[6].split("freeAccX")[1].split(":")[1].split("}")[0])
 
         def mag(self, data):
 		x = data.magnetic_field.x
@@ -119,20 +90,16 @@ class ubication(object):
                 #self.yaw = (euler[2] + self.yaw_1)*(180/np.pi)
                 self.yaw = euler[2]
 
-		#ANGULAR VELOCITY
-		self.w = data.angular_velocity.z - 0.02
-		if self.w < 0.02:
-			self.w = 0.0
-
 		#FILTER FOR ACCELEROMETERS
-		self.accx = self.free_acc_x
-		self.accy = self.free_acc_y
+		self.accx = data.linear_acceleration.x
+		self.accy = data.linear_acceleration.y
 
-		self.acc_x = 0.0009447*self.accx + 0.001889*self.accx_1 + 0.0009447*self.accx_2 + 1.911*self.acc_x_1 - 0.915*self.acc_x_2
-		self.acc_y = 0.0009447*self.accy + 0.001889*self.accy_1 + 0.0009447*self.accy_2 + 1.911*self.acc_y_1 - 0.915*self.acc_y_2
+		self.acc_x = 0.0155*self.accx + 0.0155*self.acc_x_1 + 0.9691*self.acc_x
+		self.acc_y = 0.0155*self.accy + 0.0155*self.acc_y_1 + 0.9691*self.acc_y
 
 		#ROTATION MATRIX
-		self.acc = np.array([ [self.acc_x],[self.acc_y] ])
+		self.acc = np.array([ [self.acc_x - 0.004],[self.acc_y - 0.014] ])
+		self.w = data.angular_velocity.z - 0.02
 
 		self.RB = np.array([ [np.cos(self.yaw), -np.sin(self.yaw)],
                                         [np.sin(self.yaw), np.cos(self.yaw)]  ])
@@ -140,27 +107,13 @@ class ubication(object):
 		self.RB_ = np.dot(self.RB, self.acc)
 
 		#UPDATE VARIABLES
-		self.accx_2 = self.accx_1
-		self.accx_1 = self.accx
-		self.acc_x_2 = self.acc_x_1
-		self.acc_x_1 = self.acc_x
-
-		self.accy_2 = self.accy_1
-		self.accy_1 = self.accy
-		self.acc_y_2 = self.acc_y_1
-		self.acc_y_1 = self.acc_y
+		self.acc_x_1 = self.accx
+		self.acc_y_1 = self.accy
 
 
 	def main(self):
 		rate = rospy.Rate(20)
 		while not rospy.is_shutdown():
-
-			#print("acc_x", self.accx)
-			#print("free_acc_x", self.acc_x)
-			#print("acc_y", self.accy)
-			#print("free_acc_y", self.acc_y)
-
-			#print " "
 
 			imu_node.header.frame_id = "NODE IMU ROTATE"
 			imu_node.header.stamp = rospy.get_rostime()
@@ -177,7 +130,7 @@ class ubication(object):
 
 if __name__=='__main__':
         try:
-                rospy.init_node("Orientation")
+                rospy.init_node('Orientation',anonymous=True, disable_signals=True)
                 print "Nodo YAW Creado"
                 cv = ubication()
 		cv.main()

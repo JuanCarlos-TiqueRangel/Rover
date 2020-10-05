@@ -58,7 +58,7 @@ int main(int argc, char **argv){
 
 	ros::Subscriber sub = nh.subscribe("/yaw", 1000, orientation);
 	ros::Subscriber sub1 = nh.subscribe("/gps", 1000, gps_info);
-	ros::Subscriber sub2 = nh.subscribe("/position", 1000, encoder);
+	ros::Subscriber sub2 = nh.subscribe("/odom", 1000, encoder);
 	ros::Subscriber sub3 = nh.subscribe("/enc_data", 1000, read_enc);
 
 	principal();
