@@ -78,7 +78,7 @@ class roboteq(object):
 if __name__=='__main__':
 
        	try:
-               	rospy.init_node("ENCODERS_DATA")
+               	rospy.init_node("encoders_data")
 		print "Nodo ENCODERS creado"
                	cv = roboteq()
 		cv.read_roboteq()
@@ -87,7 +87,7 @@ if __name__=='__main__':
                	pass
 
 	except ValueError:
-                rospy.init_node('Encoders_data',anonymous=True, disable_signals=True)
+                #rospy.init_node('Encoders_data',anonymous=True, disable_signals=True)
 		print "ENTRO AL EXCEPT"
                 print "Nodo ENCODERS creado"
                 cv = roboteq()

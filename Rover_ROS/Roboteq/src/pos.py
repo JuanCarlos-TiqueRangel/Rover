@@ -240,7 +240,7 @@ class ubication(object):
 
 if __name__=='__main__':
         try:
-                rospy.init_node("Odom_node")
+                rospy.init_node("odom_node")
                 print "Nodo POS Creado"
                 cv = ubication()
                 cv.main()

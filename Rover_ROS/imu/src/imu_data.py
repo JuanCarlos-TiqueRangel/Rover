@@ -127,7 +127,6 @@ class ubication(object):
 		#FILTER FOR ACCELEROMETERS
 		self.accx = self.free_acc_x
 		self.accy = self.free_acc_y
-
 		self.acc_x = 0.0009447*self.accx + 0.001889*self.accx_1 + 0.0009447*self.accx_2 + 1.911*self.acc_x_1 - 0.915*self.acc_x_2
 		self.acc_y = 0.0009447*self.accy + 0.001889*self.accy_1 + 0.0009447*self.accy_2 + 1.911*self.acc_y_1 - 0.915*self.acc_y_2
 
@@ -138,6 +137,13 @@ class ubication(object):
                                         [np.sin(self.yaw), np.cos(self.yaw)]  ])
 
 		self.RB_ = np.dot(self.RB, self.acc)
+
+		if abs(self.RB_[0,0]) < 0.1:
+			self.RB_[0,0] = 0.0
+
+		if abs(self.RB_[1,0]) < 0.1:
+			self.RB_[1,0] = 0.0
+
 
 		#UPDATE VARIABLES
 		self.accx_2 = self.accx_1
@@ -177,7 +183,7 @@ class ubication(object):
 
 if __name__=='__main__':
         try:
-                rospy.init_node("Orientation")
+                rospy.init_node("imu_data_filtered")
                 print "Nodo YAW Creado"
                 cv = ubication()
 		cv.main()

@@ -2,7 +2,8 @@
 import serial
 import rospy
 import pigpio
-#import RPi.GPIO as GPIO
+import scipy.io
+import sys
 
 from sensor_msgs.msg import JointState
 from nav_msgs.msg import Odometry
@@ -27,7 +28,7 @@ class adq_datos(object):
 		self.cuenta = 0
 		self.calibra = 0
 
-		self.avanzar = 72.0
+		self.avanzar = 60.0
 
                 # pins mode
                 pi.set_mode(13, pigpio.OUTPUT)
@@ -36,14 +37,12 @@ class adq_datos(object):
                 # hardware_PWM(gpio, PWMfreq, PWMduty)
                 self.M1 = pi.hardware_PWM(12, 1000, 0)
                 self.M2 = pi.hardware_PWM(13, 1000, 0)
-		self.signal = [150,
-		150]
 
-		self.signal2 = [160,
-		160]
-
-		self.signal1 = [96.9986973747417,
-		191.923337843862]
+		#VARIABLES PARA LA SENAL PRBS
+		self.signal = scipy.io.loadmat('matlab.mat')
+		self.data = self.signal['u']
+		self.cuenta = 0
+		self.ini = True
 
                 rospy.Subscriber('/channels', JointState, self.synchronize_pwm)
 
@@ -103,14 +102,11 @@ class adq_datos(object):
                 self.refT = self.th
                 self.refS = self.st
 
-                #print str(self.RC1) + "\t" + str(self.RC2)
+		print str(self.RC1) + "\t" + str(self.RC2)
 
 	def automatico(self):
 
-		X = 1
-		#print "automata"
-
-		if 1900 < self.calibration < 2200:
+		if 900 < self.calibration < 1000:
 			if self.calibra < 54:
 				pi.set_PWM_dutycycle(12,180)
 				print "calibrando"
@@ -125,22 +121,28 @@ class adq_datos(object):
 				msg.name = []
 
 
-		if 900 < self.calibration < 1000:
-			#pi.set_PWM_dutycycle(13, self.avanzar)
+		if 1900 < self.calibration < 2000:
+			if self.cuenta + 1 > len(self.data):
+				pi.set_PWM_dutycycle(13, 127.5)
+				pi.set_PWM_dutycycle(12, 127.5)
+				#sys.exit(0)
 
-			#if self.cuenta <130:
-			#	pi.set_PWM_dutycycle(13, self.avanzar)
-			#	pi.set_PWM_dutycycle(12, self.signal1[self.cuenta])
-			#	msg.velocity = [self.avanzar,self.signal1[self.cuenta]]
-			#	self.pub.publish(msg)
-			#	print self.cuenta
+			else:
+				pi.set_PWM_dutycycle(13, self.avanzar)
+				pi.set_PWM_dutycycle(12, self.data[self.cuenta])
 
-			#if self.cuenta == 130:
-			pi.set_PWM_dutycycle(13, 125.5)
-			pi.set_PWM_dutycycle(12, 125.5)
-			#	print "Termino"
+			self.cuenta += 1
 
-			#self.cuenta = self.cuenta + 1
+			if self.cuenta == 30:
+				self.cuenta = 60
+				self.ini = False
+
+			if self.cuenta == 90:
+				self.cuenta = 60
+
+
+			print self.cuenta
+
 
 	def main(self):
 		rate = rospy.Rate(20)

@@ -164,6 +164,10 @@ add_executable(trajectories src/trajectories.cpp)
 add_dependencies(trajectories ${trajectories_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(trajectories ${catkin_LIBRARIES})
 
+add_executable(ident src/ident.cpp)
+add_dependencies(ident ${ident_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(ident ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############

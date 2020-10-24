@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import rospy
-#import RPi.GPIO as GPIO
 import time
 import pigpio
 from sensor_msgs.msg import JointState
@@ -47,19 +46,16 @@ class RC(object):
 		self.st = st
 		self.th = th
 
-		#NO SE PUEDE USAR EL while not porque
-		#no deja actualizar las variables a publicar
-		#while not rospy.is_shutdown():
-
 		msg.velocity = [self.ax1, self.ax2, self.st, self.th]
 		msg.header.stamp = rospy.get_rostime()
 		self.pub.publish(msg)
 
+
 if __name__== '__main__':
 
-	while True:
-		try:
-			rospy.init_node("RC_CONTROL")
+	try:
+		while not rospy.is_shutdown():
+			rospy.init_node("rc_control")
 			cv = RC()
 
                         if init_topic == True:
@@ -76,30 +72,24 @@ if __name__== '__main__':
                                                 diffS = diff_S
                                                 diffT = diff_T
                                 		cv.ch(diffA1, diffA2, diffS, diffT)
-
                                 last_tick_A1 = tick
-
 
                         def Throttle(gpio, level, tick):
                                 global last_tick_T, diff_T
                                 if last_tick_T is not None:
                                         diff_T = pigpio.tickDiff(last_tick_T, tick)
-
 				last_tick_T = tick
-
 
                         def Steering(gpio, level, tick):
                                 global last_tick_S, diff_S
                                 if last_tick_S is not None:
                                         diff_S = pigpio.tickDiff(last_tick_S, tick)
-
                                 last_tick_S = tick
 
 			def AX2(gpio, level, tick):
 				global last_tick_A2, diff_A2
 				if last_tick_A2 is not None:
 					diff_A2 = pigpio.tickDiff(last_tick_A2, tick)
-
 				last_tick_A2 = tick
 
 
@@ -114,7 +104,10 @@ if __name__== '__main__':
 			cb2.cancel()
 			cb3.cancel()
 
-		except rospy.ROSInterruptException:
-        		GPIO.cleanup()
-        		print "closed"
-			pass
+	except rospy.ROSInterruptException:
+        	print "closed"
+		pass
+
+	except KeyboardInterrupt:
+		print "closed"
+		pass

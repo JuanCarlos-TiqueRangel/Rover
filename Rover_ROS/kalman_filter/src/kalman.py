@@ -14,7 +14,7 @@ class Kalman(object):
 	def __init__(self):
 
 		self.pub = rospy.Publisher('kalman_filter', Odometry, queue_size=10)
-		self.ts = 0.1
+		self.ts = 0.05
 
 		#IMU VARIABLES
 		self.yaw = 0
@@ -26,6 +26,10 @@ class Kalman(object):
 		self.gps_y = 0
 		self.gps_0x = 0
 		self.gps_0y = 0
+		self.gps_distance = 0.0
+
+		self.gpsx = 0.0
+		self.gpsy = 0.0
 
 		#ANGULAR VELOCITY YAW
 		self.w = 0
@@ -79,18 +83,18 @@ class Kalman(object):
 		self.I = np.identity(5)
 
 		#MATRIZ DE COVARIANCE
-		self.R = np.array([ [1.5,0,0,0,0,0],
-					[0,1.5,0,0,0,0],
+		self.R = np.array([ [1.1011,0,0,0,0,0],		# 1.1011
+					[0,0.7946,0,0,0,0],	# 0.7946
 					[0,0,0.0263,0,0,0],
-					[0,0,0,0.5,0,0],
-					[0,0,0,0,0.5,0],
-					[0,0,0,0,0,0] ])
+					[0,0,0,0.3,0,0],	# 0.0740
+					[0,0,0,0,0.3,0],	# 0.1955
+					[0,0,0,0,0,0.1] ])
 
-                self.Q = np.array([ [0.5,0,0,0,0],
-                                        [0,0.5,0,0,0],
+                self.Q = np.array([ [0.1,0,0,0,0],
+                                        [0,0.1,0,0,0],
                                         [0,0,0.01,0,0],
-                                        [0,0,0,0.5,0],
-                                        [0,0,0,0,0.5] ])
+                                        [0,0,0,0.1,0],
+                                        [0,0,0,0,0.1] ])
 		self.R1 = []
 
 		#VARIABLES ODOMETRIA
@@ -113,6 +117,11 @@ class Kalman(object):
 		self.gps_x = data.vector.x
 		self.gps_y = data.vector.y
 
+		#self.gps_distance = data.vector.z
+		#gps_dx = self.gps_distance * np.cos(self.mag_yaw)
+		#gps_dy = self.gps_distance * np.sin(self.mag_yaw)
+		#self.gpsx = self.gpsx + gps_dx
+		#self.gpsy = self.gpsy + gps_dy
 
 	def RB_imu(self,data):
 		self.yaw = data.orientation.x
@@ -138,6 +147,14 @@ class Kalman(object):
 		self.Xkp = np.dot(self.A,self.Xk_1) + np.dot(self.B,self.U)
 		self.Pkp = np.dot(np.dot(self.A,self.Pk_1),self.A.T) + self.Q
 
+		theta_aux = self.Xkp[2,0] # ANGULO GENERADOR POR EL MODELO
+
+		if self.Xkp[2,0] > np.pi:
+			self.Xkp[2,0] -= 2.0*np.pi
+
+		elif self.Xkp[2,0] < -np.pi:
+			self.Xkp[2,0] += 2.0*np.pi
+
 		#NUEVA MEDICION
 		self.Yk = np.dot(self.C,self.Xk_1)
 
@@ -148,13 +165,37 @@ class Kalman(object):
                 		[self.Pos_y],
                 		[self.odom_yaw] ])
 
+                #self.Y = np.array([ [self.gpsx],
+                #                [self.gpsy],
+                #                [self.mag_yaw],
+                #                [self.Pos_x],
+                #                [self.Pos_y],
+                #                [self.odom_yaw] ])
+
 		#NUEVA MEDICION Y GANANCIA DE KALMAN
 		self.K1 = np.dot(self.Pkp,self.C.T)
 		self.K2 = np.dot(np.dot(self.C,self.Pkp),self.C.T) + self.R
 
 		self.K = np.dot(self.K1,np.linalg.inv(self.K2))
-
 		self.Y_a = self.Y - self.Yk
+
+		# MEDICION Y SELECCION DEL ERROR MAS PEQUENO
+		error1 = self.Y[2,0] - theta_aux
+		error2 = self.Y[2,0] - self.Xkp[2,0]
+		if abs(error1) > abs(error2):
+			self.Y_a[2,0] = error2
+		else:
+			self.Y_a[2,0] = error1
+
+                error1 = self.Y[5,0] - theta_aux
+                error2 = self.Y[5,0] - self.Xkp[2,0]
+                if abs(error1) > abs(error2):
+                        self.Y_a[5,0] = error2
+                else:
+                        self.Y_a[5,0] = error1
+
+
+		# ACTUALIZACION DEL VECTOR DE ESTADO
 		self.Xk = self.Xkp + np.dot(self.K, self.Y_a)
 
 		self.Pk1 = self.I - np.dot(self.K,self.C)
@@ -171,12 +212,6 @@ class Kalman(object):
 
 		self.count += 1
 
-		while self.Xk[2,0] > np.pi:
-			self.Xk[2,0] -= 2.0*np.pi
-
-		while self.Xk[2,0] < -np.pi:
-			self.Xk[2,0] += 2.0*np.pi
-
 		#ACTUALIZACION
 		self.Xk_1 = self.Xk
 		self.Pk_1 = self.Pk
@@ -192,16 +227,14 @@ class Kalman(object):
 			self.filter()
 
                         odom.header.stamp = rospy.get_rostime()
-
 			odom.header.frame_id = "KALMAN FILTER"
 			odom.pose.pose.position.x = self.Xk[0,0]
 			odom.pose.pose.position.y = self.Xk[1,0]
 			odom.pose.pose.position.z = self.Xk[2,0]
 			odom.twist.twist.angular.z = self.w
-
 			self.pub.publish(odom)
 
-			#print(self.odom_yaw)
+			#print(odom)
 			#print " "
 
 			rate.sleep()
@@ -209,7 +242,7 @@ class Kalman(object):
 if __name__ == '__main__':
         try:
 
-                rospy.init_node("Kalman_Filter")
+                rospy.init_node("kalman_filter")
                 print "Nodo kalman_filter creado"
                 cv = Kalman()
                 cv.main()

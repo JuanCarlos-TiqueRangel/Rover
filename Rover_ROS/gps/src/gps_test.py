@@ -132,7 +132,8 @@ class GPS(object):
 					msg.header.stamp = rospy.get_rostime()
 					msg.vector.x = x
 					msg.vector.y = y
-					msg.vector.z = self.satelites
+					#msg.vector.z = self.satelites
+					msg.vector.z = self.distance
 
 					self.pub.publish(msg)
 					self.pub1.publish(gps)
@@ -145,7 +146,7 @@ class GPS(object):
 
 if __name__ == '__main__':
 	try:
-		rospy.init_node("GPS_DATA")
+		rospy.init_node("gps_data")
 		print "Nodo GPS creado"
     		cv = GPS()
 		cv.ubicacion()

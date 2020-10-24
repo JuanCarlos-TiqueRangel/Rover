@@ -1,3 +1,4 @@
+#include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
@@ -5,7 +6,6 @@
 #include <geometry_msgs/Vector3Stamped.h>
 
 #include <fstream>
-#include <ros/ros.h>
 
 using namespace std;
 using namespace nav_msgs;
