@@ -72,6 +72,7 @@ class roboteq(object):
 				msg.velocity = [self.battery, self.I_left, self.I_right ,self.enc_left, self.enc_right, self.counter]
 				msg.header.stamp = rospy.get_rostime()
                                 self.pub.publish(msg)
+
 				#self.rate.sleep()
                                 #print msg
 

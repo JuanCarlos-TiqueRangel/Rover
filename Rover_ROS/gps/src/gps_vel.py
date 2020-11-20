@@ -15,11 +15,11 @@ msg = Odometry()
 
 gps = serial.Serial(
 		port = "/dev/tty_gps",
-		baudrate = 9600,
-                parity=serial.PARITY_ODD,
-                stopbits=serial.STOPBITS_ONE,
-                bytesize=serial.EIGHTBITS,
-                timeout = 3.0)
+		baudrate = 115200)
+                #parity=serial.PARITY_ODD,
+                #stopbits=serial.STOPBITS_ONE,
+                #bytesize=serial.EIGHTBITS,
+                #timeout = 3.0)
 
 class GPS(object):
 
@@ -48,7 +48,7 @@ class GPS(object):
 			while True:
                 		self.line = self.gps.readline()
                        		data = self.line.split(",")
-				print self.line
+				#print data
 
                                 if (data[0] == "$GPRMC") and (data[2]=='A'):
 					self.MeasureCounting = self.MeasureCounting + 1
@@ -60,7 +60,8 @@ class GPS(object):
 						if vel_m_s < 0.5:
 							vel_m_s = 0
 
-						self.distance = (t_1 - t_0) * vel_m_s
+						self.distance += (t_1 - t_0) * vel_m_s
+						print t_1 - t_0
 						t_0 = t_1
 
 						#print self.distance

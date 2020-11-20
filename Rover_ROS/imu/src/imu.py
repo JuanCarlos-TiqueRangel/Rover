@@ -4,14 +4,12 @@ import rospy
 import numpy as np
 
 from sensor_msgs.msg import Imu, MagneticField, JointState
-from std_msgs.msg import String
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from nav_msgs.msg import Odometry
-from geometry_msgs import Vector3Stamped
+from geometry_msgs.msg import Vector3Stamped
 
 imu_node = Imu()
-#mag = MagneticField()
-mag = Vector3Stamped
+mag = MagneticField()
 
 class ubication(object):
         def __init__(self):
@@ -68,37 +66,16 @@ class ubication(object):
 
                 rospy.Subscriber('/imu/mag', Vector3Stamped, self.mag)
 		rospy.Subscriber('/imu/data', Imu, self.imu)
-		rospy.Subscriber('/main_node', JointState, self.calibration)
-		#rospy.Subscriber('/imu_data_str', String, self.imu_bias)
+		rospy.Subscriber('/filter/free_acceleration', Vector3Stamped, self.free_acc)
 
-		self.rate = rospy.Rate(20)
 		self.tiempo = 0.0
 
-		#rospy.spin()
+	def free_acc(self, data):
+		self.free_acc_x = data.vector.x
+		self.free_acc_y = data.vector.y
+		self.free_acc_z = data.vector.z
 
-#	def imu_bias(self, free):
-#		freeAcc = free.data
-#		acc_ = freeAcc.split(",")
-
-		#print acc_[6]
-		#print " "
-
-#		self.free_acc_z = float(acc_[4].split("freeAccZ")[1].split(":")[1])
-#		self.free_acc_y = float(acc_[5].split("freeAccY")[1].split(":")[1])
-#		self.free_acc_x = float(acc_[6].split("freeAccX")[1].split(":")[1].split("}")[0])
-
-#		self.mag_z = float(acc_[9].split("Magnetic")[1].split(":")[2])
-#		self.mag_x = float(acc_[11].split("magX")[1].split(":")[1])
-#		self.mag_y = float(acc_[12].split("magY")[1].split(":")[1].split("}")[0])
-
-		#print np.arctan2(self.mag_y,self.mag_x)
-
-		#print self.mag_z
-		#print self.mag_y
-		#print self.mag_x
-		#print " "
-
-        def mag(self, data):
+	def mag(self, data):
 		x = data.vector.x
 		y = data.vector.y
 		z = data.vector.z
@@ -121,28 +98,11 @@ class ubication(object):
 
 		self.mag_yaw = np.arctan2(self.y,self.x)
 
-		#if self.cuenta == 0:
-		#	self.yaw_1 = np.arctan2(-y, x)
-		#	self.cuenta = self.cuenta + 1
-
-		#if self.calibration == ['Termino']:
-		#	self.yaw_1 = np.arctan2(-self.y, self.x)
-		#	self.calibration = []
-		#	print self.yaw_1
-
-	def calibration(self, data):
-		self.calibration = data.name
-		if self.calibration == ['Termino']:
-			self.yaw_1 = np.arctan2(-self.y, self.x)
-			#self.calibration = []
-			print self.yaw_1*180/np.pi
-
         def imu(self, data):
-                orientation_q = data.orientation
+		orientation_q = data.orientation
 		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-                euler = euler_from_quaternion(orientation_list)
-                #self.yaw = (euler[2] + self.yaw_1)*(180/np.pi)
-                self.yaw = euler[2]
+		euler = euler_from_quaternion(orientation_list)
+		self.yaw = euler[2]
 
 		#ANGULAR VELOCITY
 		self.w = data.angular_velocity.z #- 0.02
@@ -194,12 +154,12 @@ class ubication(object):
 			#print self.RB_[1,0]
 			#print " "
 
-			mag.header.stamp = rospy.get_rostime()
-			mag.header.frame_id = "Magnetometro_calibrado"
-			mag.magnetic_field.x = self.x
-			mag.magnetic_field.y = self.y
-			mag.magnetic_field.z = self.z
-			self.pub1.publish(mag)
+			#mag.header.stamp = rospy.get_rostime()
+			#mag.header.frame_id = "Magnetometro_calibrado"
+			#mag.magnetic_field.x = self.x
+			#mag.magnetic_field.y = self.y
+			#mag.magnetic_field.z = self.z
+			#self.pub1.publish(mag)
 
 			imu_node.header.stamp = rospy.get_rostime()
 			imu_node.header.frame_id = "NODE IMU ROTATE"

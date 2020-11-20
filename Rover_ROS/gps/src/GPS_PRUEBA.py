@@ -40,7 +40,9 @@ class GPS(object):
 		self.y = 0.0
 
 		self.ds = 0.0
+		self.time_seconds = 0.0
 		self.flag_time = True
+		self.data = 0
 		self.t_1 = 0.0
 		self.t_0 = 0.0
 
@@ -48,58 +50,60 @@ class GPS(object):
 		self.pub1 = rospy.Publisher('/gps/data', GPSFix, queue_size=10)
 
 	def GpsTimeSeconds(self, Time_Gps):
-		H = float(Time_Gps[0:2])
-		M = float(Time_Gps[2:4])
-		S = float(Time_Gps[4:9])
+                H = float(Time_Gps[0:2])
+                M = float(Time_Gps[2:4])
+                S = float(Time_Gps[4:9])
 
 		Time_seconds = H*3600 + M*60 + S
+		self.time_seconds = Time_seconds
 		return Time_seconds
 
 	def gps_read(self, data):
 
 		line = data.readline()
-		data = line.split(",")
+		self.data = line.split(",")
 
-		if data[0] == "$GPGGA":
+		#print data[1]
+
+		if self.data[0] == "$GPGGA":
 			self.satelites = float(data[7])
 			self.altitude = float(data[9])
 
-		if (data[0] == "$GPRMC") and (data[2]=='A'):
-
-			self.Latitude = int(float(data[3])/100.0)
-			self.Latitude = self.Latitude + (float(data[3])%100.0)/60.0
-			if data[4] == 'N':
+		if (self.data[0] == "$GPRMC") and (self.data[2]=='A'):
+			self.Latitude = int(float(self.data[3])/100.0)
+			self.Latitude = self.Latitude + (float(self.data[3])%100.0)/60.0
+			if self.data[4] == 'N':
 				self.Latitude = self.Latitude*1.0
-			elif data[4] == 'S':
+			elif self.data[4] == 'S':
 				self.Latitude = self.Latitude*-1.0
 
-			self.Longitude = int(float(data[5])/100.0)
-			self.Longitude = self.Longitude + (float(data[5])%100.0)/60.0
-			if data[6] == 'E':
+			self.Longitude = int(float(self.data[5])/100.0)
+			self.Longitude = self.Longitude + (float(self.data[5])%100.0)/60.0
+			if self.data[6] == 'E':
 				self.Longitude = self.Longitude*1.0
-			elif data[6] == 'W':
+			elif self.data[6] == 'W':
 				self.Longitude = self.Longitude*-1.0
 
 			#DISTANCIA A PARTIR DE LA VELOCIDAD
-			#self.speed_m_s = float(data[7]) * 0.514444
-			self.time_utc = float(data[1])
+			self.speed_m_s = float(self.data[7]) * 0.514444
+			self.time_utc = float(self.data[1])
 
-			#if self.speed_m_s < 0.5:
-			#	self.speed_m_s = 0.0
+			if self.speed_m_s < 0.5:
+				self.speed_m_s = 0.0
 
-			self.MeasureCounting = self.MeasureCounting + 1
-			if self.MeasureCounting == 1:
-			#if self.flag_time == True:
-				self.t_0 = self.GpsTimeSeconds(data[1])
+			self.MeasureCounting += 1
+			#if self.MeasureCounting == 1:
+			if self.flag_time == True:
+				self.t_0 = self.GpsTimeSeconds(self.data[1])
 				self.flag_time = False
+				print "entro al if"
 			else:
-				self.t_1 = self.GpsTimeSeconds(data[1])
-				self.speed_m_s = float(data[7]) * 0.514444
-				if self.speed_m_s < 0.5:
-					self.speed_m_s = 0.0
-
+				#print "entro al else"
+				self.t_1 = self.GpsTimeSeconds(self.data[1])
 				self.distance = (self.t_1 - self.t_0) * self.speed_m_s
+				print (self.t_1 - self.t_0)
 				self.t_0 = self.t_1
+				#print self.t_0
 
 		#self.ds += self.speed_m_s * 1
 
@@ -135,7 +139,7 @@ class GPS(object):
 		J6 = (5*J4 + A2 * (np.cos(Lat_rad)*np.cos(Lat_rad)))/3
 		alpha2 = (3.0/4.0)*(self.e2)
 		beta = (5.0/3.0)*(alpha2*alpha2)
-		gamma = (35.0/27.0)*(np.power(alpha2,3))
+		gamma = (35.0/27.0)*(np.power(alpha2,2))
 		B_phi = 0.9996 * self.c * (Lat_rad - alpha2 * J2 + beta * J4 - gamma * J6)
 
 		self.x = xi*nu*(1+zeta/3.0)+500000.0
@@ -162,7 +166,7 @@ class GPS(object):
 				gps.speed = self.speed_m_s
 				gps.status.satellites_used = self.satelites
 				gps.time = self.time_utc
-				gps.track = self.distance
+				gps.track = self.ds #self.distance
 
 				#print self.time_utc
 

@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3Stamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from gps_common.msg import GPSStatus, GPSFix
 
 odom = Odometry()
 
@@ -27,6 +28,8 @@ class Kalman(object):
 		self.gps_0x = 0
 		self.gps_0y = 0
 		self.gps_distance = 0.0
+		self.gps_vel = 0.0
+		self.gps_vel2 = 0.0
 
 		self.gpsx = 0.0
 		self.gpsy = 0.0
@@ -45,8 +48,8 @@ class Kalman(object):
 		self.Xk = np.zeros([5,1])
 		self.Xk_1 = np.zeros([5,1])
 
-                self.B = np.array([ [0,0,0],
-                                        [0,0,0],
+                self.B = np.array([ [0,self.ts**2,0],
+                                        [0,0,self.ts**2],
                                         [self.ts,0,0],
                                         [0,self.ts,0],
                                         [0,0,self.ts] ])
@@ -76,15 +79,15 @@ class Kalman(object):
 					[0,1,0,0,0],
 					[0,0,1,0,0] ])
 
-		self.K = np.zeros([5,5])
+		self.K = np.zeros([5,6])
 		self.K1 = np.zeros([5,6])
 		self.K2 = np.zeros([6,6])
 
 		self.I = np.identity(5)
 
 		#MATRIZ DE COVARIANCE
-		self.R = np.array([ [1.1011,0,0,0,0,0],		# 1.1011
-					[0,0.7946,0,0,0,0],	# 0.7946
+		self.R = np.array([ [1.1,0,0,0,0,0],		# 1.1011
+					[0,1.1,0,0,0,0],	# 0.7946
 					[0,0,0.0263,0,0,0],
 					[0,0,0,0.3,0,0],	# 0.0740
 					[0,0,0,0,0.3,0],	# 0.1955
@@ -93,8 +96,8 @@ class Kalman(object):
                 self.Q = np.array([ [0.1,0,0,0,0],
                                         [0,0.1,0,0,0],
                                         [0,0,0.01,0,0],
-                                        [0,0,0,0.1,0],
-                                        [0,0,0,0,0.1] ])
+                                        [0,0,0,0.01,0],
+                                        [0,0,0,0,0.01] ])
 		self.R1 = []
 
 		#VARIABLES ODOMETRIA
@@ -109,23 +112,33 @@ class Kalman(object):
 
 		self.samples = 0
 
-		rospy.Subscriber('/gps', Vector3Stamped, self.gps_data)
+		self.tiempo = 0.0
+
+		rospy.Subscriber('/gps', Odometry, self.gps_data)
+		rospy.Subscriber('/gps/data', GPSFix, self.gps_info)
 		rospy.Subscriber('/odom', Odometry, self.odometria)
 		rospy.Subscriber('/yaw', Imu, self.RB_imu)
 
 	def gps_data(self,data):
-		self.gps_x = data.vector.x
-		self.gps_y = data.vector.y
+		self.gps_x = data.pose.pose.position.x
+		self.gps_y = data.pose.pose.position.y
+		self.gps_vel2 = data.twist.twist.linear.x*0.0666
 
-		#self.gps_distance = data.vector.z
-		#gps_dx = self.gps_distance * np.cos(self.mag_yaw)
-		#gps_dy = self.gps_distance * np.sin(self.mag_yaw)
-		#self.gpsx = self.gpsx + gps_dx
-		#self.gpsy = self.gpsy + gps_dy
+	def gps_info(self,data):
+		self.gps_distance = data.track
+		self.gps_vel = data.speed*0.0666
+
+		#gps_dx = self.gps_distance * np.cos(self.mag_yaw + np.pi)
+		#gps_dy = self.gps_distance * np.sin(self.mag_yaw + np.pi)
+		gps_dx = self.gps_vel * np.cos(self.mag_yaw + np.pi/2.0)
+		gps_dy = self.gps_vel * np.sin(self.mag_yaw + np.pi/2.0)
+
+		self.gpsx = self.gpsx + gps_dx
+		self.gpsy = self.gpsy + gps_dy
 
 	def RB_imu(self,data):
 		self.yaw = data.orientation.x
-		self.mag_yaw = data.orientation.y
+		self.mag_yaw = data.orientation.y*-1
 
 		self.Acc_x = data.linear_acceleration.x
 		self.Acc_y = data.linear_acceleration.y
@@ -158,19 +171,26 @@ class Kalman(object):
 		#NUEVA MEDICION
 		self.Yk = np.dot(self.C,self.Xk_1)
 
-		self.Y = np.array([ [self.gps_x - self.gps_0x],
-                		[self.gps_y - self.gps_0y],
-                		[self.mag_yaw],
-                		[self.Pos_x],
-                		[self.Pos_y],
-                		[self.odom_yaw] ])
+		#self.Y = np.array([ [self.gps_x - self.gps_0x],
+		#		[self.gps_y - self.gps_0y],
+		#		[self.mag_yaw],
+		#		[self.Pos_x],
+		#		[self.Pos_y],
+		#		[self.odom_yaw] ])
 
-                #self.Y = np.array([ [self.gpsx],
-                #                [self.gpsy],
+                #self.Y = np.array([ [self.gps_x - self.gps_0x],
+                #                [self.gps_y - self.gps_0y],
                 #                [self.mag_yaw],
                 #                [self.Pos_x],
                 #                [self.Pos_y],
                 #                [self.odom_yaw] ])
+
+		self.Y = np.array([ [self.gpsx],
+				[self.gpsy],
+				[self.mag_yaw],
+				[self.Pos_x],
+				[self.Pos_y],
+				[self.odom_yaw] ])
 
 		#NUEVA MEDICION Y GANANCIA DE KALMAN
 		self.K1 = np.dot(self.Pkp,self.C.T)
@@ -181,20 +201,30 @@ class Kalman(object):
 
 		# MEDICION Y SELECCION DEL ERROR MAS PEQUENO
 		error1 = self.Y[2,0] - theta_aux
+		#if error1 < -3*np.pi/2.0:
+		#	self.Y_a[2,0] = self.Y_a[2,0] + 2*np.pi
+		#elif error1 > 3*np.pi/2.0:
+		#	self.Y_a[2,0] = self.Y_a[2,0] - 2*np.pi
+
 		error2 = self.Y[2,0] - self.Xkp[2,0]
 		if abs(error1) > abs(error2):
 			self.Y_a[2,0] = error2
 		else:
 			self.Y_a[2,0] = error1
 
-                error1 = self.Y[5,0] - theta_aux
-                error2 = self.Y[5,0] - self.Xkp[2,0]
-                if abs(error1) > abs(error2):
-                        self.Y_a[5,0] = error2
-                else:
-                        self.Y_a[5,0] = error1
+                error3 = self.Y[5,0] - theta_aux
+		#if error3 < -3*np.pi/2.0:
+		#	self.Y_a[5,0] = self.Y_a[5,0] + 2*np.pi
+		#elif error3 > 3*np.pi/2.0:
+		#	self.Y_a[5,0] = self.Y_a[5,0] - 2*np.pi
 
+                error4 = self.Y[5,0] - self.Xkp[2,0]
+		if abs(error3) > abs(error4):
+			self.Y_a[5,0] = error4
+		else:
+			self.Y_a[5,0] = error3
 
+		#time.sleep(0.5)
 		# ACTUALIZACION DEL VECTOR DE ESTADO
 		self.Xk = self.Xkp + np.dot(self.K, self.Y_a)
 
@@ -232,6 +262,10 @@ class Kalman(object):
 			odom.pose.pose.position.y = self.Xk[1,0]
 			odom.pose.pose.position.z = self.Xk[2,0]
 			odom.twist.twist.angular.z = self.w
+
+			odom.twist.twist.linear.x = self.gps_x - self.gps_0x
+			odom.twist.twist.linear.y = self.gps_y - self.gps_0y
+
 			self.pub.publish(odom)
 
 			#print(odom)

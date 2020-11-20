@@ -1,81 +1,111 @@
-# Distributed with a free-will license.
-# Use it any way you want, profit or free, provided it fits in the licenses of its associated works.
-# HMC5883
-# This code is designed to work with the HMC5883_I2CS I2C Mini Module available from ControlEverything.com.
-# https://www.controleverything.com/content/Compass?sku=HMC5883_I2CS#tabs-0-product_tabset-2
-
-import smbus
-import time
 import rospy
+import smbus
+from time import sleep
+import math
 import numpy as np
-from nav_msgs.msg import Odometry
-from sensor_msgs.msg import MagneticField
 
-msg = MagneticField()
+#some MPU6050 Registers and their Address
+Register_A     = 0		#Address of Configuration register A
+Register_B     = 0x01		#Address of configuration register B
+Register_mode  = 0x02		#Address of mode register
+
+X_axis_H    = 0x03		#Address of X-axis MSB data register
+Z_axis_H    = 0x05		#Address of Z-axis MSB data register
+Y_axis_H    = 0x07		#Address of Y-axis MSB data register
+declination = -0.00669		#define declination angle of location where measurement going to be $
+pi          = 3.14159265359	#define pi value
+
+bus = smbus.SMBus(1)
+Device_Address = 0x1e
 
 class magnetometer(object):
 
-	def __init__(self):
-		self.pub = rospy.Publisher('/magnetic', MagneticField, queue_size=10)
+        def __init__(self):
 
-		self.rate = rospy.Rate(10)
-		self.mag()
+                self.x = 0.0
+                self.y = 0.0
+                self.z = 0.0
 
-	def mag(self):
-		while True:
-			# Get I2C bus
-			bus = smbus.SMBus(1)
+                self.xmin = 0.0
+                self.ymin = 0.0
+                self.xmax = 0.0
+                self.ymax = 0.0
 
-			# HMC5883 address, 0x1E(30)
-			# Select configuration register A, 0x00(00)
-			#		0x60(96)	Normal measurement configuration, Data output rate = 0.75 Hz
-			bus.write_byte_data(0x1E, 0x00, 0x60)
-			# HMC5883 address, 0x1E(30)
-			# Select mode register, 0x02(02)
-			#		0x00(00)	Continuous measurement mode
-			bus.write_byte_data(0x1E, 0x02, 0x00)
+                self.yaw = 0.0
 
-			time.sleep(0.1)
+        #def magnetometer_init(self):
+		#write to Configuration Register A
+		bus.write_byte_data(Device_Address, Register_A, 0x70)
 
-			# HMC5883 address, 0x1E(30)
-			# Read data back from 0x03(03), 6 bytes
-			# X-Axis MSB, X-Axis LSB, Z-Axis MSB, Z-Axis LSB, Y-Axis MSB, Y-Axis LSB
-			data = bus.read_i2c_block_data(0x1E, 0x03, 6)
+		#Write to Configuration Register B for gain
+		bus.write_byte_data(Device_Address, Register_B, 0xa0)
 
-			# Convert the data
-			xMag = data[0] * 256 + data[1]
-			if xMag > 32767 :
-				xMag -= 65536
+		#Write to mode Register for selecting mode
+		bus.write_byte_data(Device_Address, Register_mode, 0x00)
 
-			zMag = data[2] * 256 + data[3]
-			if zMag > 32767 :
-				zMag -= 65536
 
-			yMag = data[4] * 256 + data[5]
-			if yMag > 32767 :
-				yMag -= 65536
+        def read_raw_data(self, addr):
+                #Read raw 16-bit value
+                high = bus.read_byte_data(Device_Address, addr)
+                low = bus.read_byte_data(Device_Address, addr+1)
 
-                	msg.magnetic_field.x = xMag
-                	msg.magnetic_field.y = yMag
-			msg.magnetic_field.z = zMag
+                #concatenate higher and lower value
+                value = ((high << 8) | low)
 
-			yaw = np.arctan(yMag/xMag)
+                #to get signed value from module
+                if(value > 32768):
+                        value = value - 65536
+                return value
 
-			msg.header.stamp = rospy.get_rostime()
-                	self.pub.publish(msg)
-			self.rate.sleep()
+        def main(self):
 
-			# Output data to screen
-			#print "Magnetic field in X-Axis : %d" %xMag
-			#print "Magnetic field in Y-Axis : %d" %yMag
-			#print "Magnetic field in Z-Axis : %d" %zMag
-			#print " "
-			print yaw
+                rate = rospy.Rate(20)
+                while not rospy.is_shutdown():
+                        #Read Accelerometer raw value
+                        x = self.read_raw_data(X_axis_H)
+                        z = self.read_raw_data(Z_axis_H)
+                        y = self.read_raw_data(Y_axis_H)
 
-if __name__ == '__main__':
-	try:
-    		rospy.init_node('magnetic',anonymous=True, disable_signals=True)
-		print "Nodo MAG creado"
-    		cv = magnetometer()
-	except rospy.ROSInterruptException:
-		pass
+                        if x>self.xmax: self.xmax = x
+                        if y>self.ymax: self.ymax = y
+
+                        if x<self.xmin: self.xmin = x
+                        if y<self.ymin: self.ymin = y
+
+                        xsf = (self.ymax - self.ymin)/(self.xmax - self.xmin)
+                        ysf = (self.xmax - self.xmin)/(self.ymax - self.ymin)
+
+                        xoff = ((self.xmax - self.xmin)/2 - self.xmax)*xsf
+                        yoff = ((self.ymax - self.ymin)/2 - self.ymax)*ysf
+
+                        self.x = xsf*x + xoff
+                        self.y = ysf*y + yoff
+
+                        heading = np.arctan2(self.y, self.x) #+ declination
+
+                        #Due to declination check for >360 degree
+                        if(heading > pi):
+                                heading = heading - 2*pi
+
+                        #check for sign
+                        if(heading < -pi):
+                                heading = heading + 2*pi
+
+                        #convert into angle
+                        heading_angle = heading * 180/pi
+
+                        print ("angle",heading_angle)
+                        rate.sleep()
+
+
+
+if __name__=='__main__':
+        try:
+                rospy.init_node("magnetic")
+                print "nodo mag creado"
+                cv = magnetometer()
+                cv.main()
+
+        except rospy.ROSInterruptException:
+                pass
+

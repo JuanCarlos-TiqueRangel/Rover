@@ -31,7 +31,7 @@ class adq_datos(object):
 		self.cuenta = 0
 		self.calibra = 0
 
-		self.avanzar = 72.0
+		self.avanzar = 92.0 # 72.0
 
                 # pins mode
                 pi.set_mode(13, pigpio.OUTPUT)
@@ -68,8 +68,8 @@ class adq_datos(object):
 
 		#self.goalx = [0,10,10,0,0,10,0]
 		#self.goaly = [0,0,5,5,10,10,0]
-		self.goalx = [0, 5, 5, 0, 0]
-		self.goaly = [5, 5, -5, -5, 5]
+		self.goalx = [-5, -5, 0, 5, 5, 0]
+		self.goaly = [5, 0, 0, 0, 5, 5]
 		self.ini = 0
 
 		##===========================================================================##
@@ -247,11 +247,11 @@ class adq_datos(object):
                 if self.RC2 >= 254.0:
                         self.RC2 = 254.0
 
-                if self.RC1 <= 0.1:
-                        self.RC1 = 0.1
+                if self.RC1 <= 1.0:
+                        self.RC1 = 1.0
 
-                if self.RC2 <= 0.1:
-                        self.RC2 = 0.1
+                if self.RC2 <= 1.0:
+                        self.RC2 = 1.0
 
                 # SENAL DE PWM A LOS CANALES DEL ROBOTEQ
                 pi.set_PWM_dutycycle(13, self.RC1) # AVANZAR
@@ -267,7 +267,7 @@ class adq_datos(object):
                 self.refT = self.th
                 self.refS = self.st
 
-		#print str(self.RC1) + "\t" + str(self.RC2)
+		print str(self.RC1) + "\t" + str(self.RC2)
 
 	def automatico(self):
 		#CALIBRAR MAGNETOMETRO
@@ -292,9 +292,8 @@ class adq_datos(object):
 		# 			MODO CONTROL PREDICTIVO					   #
 		##================================================================================##
 		if 1900 < self.calibration < 2000:
-			pi.set_PWM_dutycycle(13, 125.5)
-			pi.set_PWM_dutycycle(12, 125.5)
-
+			#pi.set_PWM_dutycycle(13, 125.5)
+			#pi.set_PWM_dutycycle(12, 125.5)
 
 			# VARIABLES DEL VECTOR DE ESTADO THETA,THETA',THETA''
 			self.delta_pos = self.yaw - self.yaw_1
@@ -306,15 +305,17 @@ class adq_datos(object):
 			##=====================================================================##
 			#			CONTROL PREDICTIVO				#
 			##=====================================================================##
-			self.count += 1
-			if self.count >= 1:
-				self.r = -1.5 #self.angle_to_goal
-			if self.count >= 100:
-				self.r = 3.0
-			if self.count >= 200:
-				self.r = 1.5
-			if self.count >= 300:
-				self.r = -0.1
+			#self.count += 1
+			#if self.count >= 1:
+			#	self.r = -1.5 #self.angle_to_goal
+			#if self.count >= 100:
+			#	self.r = 3.0
+			#if self.count >= 200:
+			#	self.r = 1.5
+			#if self.count >= 300:
+			#	self.r = -0.1
+
+			self.r = self.angle_to_goal
 
 			self.deltaU = self.Ky*self.r - np.dot(self.K_mpc, self.xk)
 			self.deltau = self.deltaU[0,0]
@@ -356,8 +357,8 @@ class adq_datos(object):
                         if self.u <= 0.1:
                                 self.u = 0.1
 
-			pi.set_PWM_dutycycle(12, du)
-			pi.set_PWM_dutycycle(13, self.avanzar)
+			pi.set_PWM_dutycycle(12, 190)
+			#pi.set_PWM_dutycycle(13, self.avanzar)
 			## ====================================================================##
 
 			# ACTUALIZACION DE VARIABLES
@@ -401,10 +402,10 @@ class adq_datos(object):
 			if 1900 < self.modo < 2200:
 				self.stop()
 
-			elif 1400 < self.modo < 1600:
+			if 1400 < self.modo < 1600:
 				self.manual()
 
-			elif 900 < self.modo < 1000:
+			if 900 < self.modo < 1000:
 				self.automatico()
 
 			rate.sleep()
