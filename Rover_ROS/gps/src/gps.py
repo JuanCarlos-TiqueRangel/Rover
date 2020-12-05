@@ -144,7 +144,7 @@ class GPS(object):
 	def ubicacion(self):
 
 		if gps_.isOpen():
-			#rate = rospy.Rate(20)
+			rate = rospy.Rate(15)
 			while not rospy.is_shutdown():
 				try:
 					self.gps_read(gps_)
@@ -175,7 +175,7 @@ class GPS(object):
 
 				self.pub.publish(msg)
 				self.pub1.publish(gps)
-				#rate.sleep()
+				rate.sleep()
 
 				#print self.distance
 

@@ -99,8 +99,8 @@ class ubication(object):
 		self.counter = data.velocity[5]
 		self.deltatiempo = self.counter - self.counter_1
 
-		self.PL = data.velocity[4]
-		self.PR = data.velocity[3]
+		self.PL = data.velocity[3]
+		self.PR = data.velocity[4]
 
                 if self.deltatiempo == 0:
                         self.deltatiempo = self.deltatiempo_1
@@ -158,8 +158,14 @@ class ubication(object):
 			self.PL_1 = self.PL
 			self.PR_1 = self.PR
 
-		self.delta_SL = (self.PL - self.PL_1)*(2*np.pi*0.2)/1500.0
-		self.delta_SR = (self.PR - self.PR_1)*(2*np.pi*0.2)/1500.0
+		DPL = self.PL - self.PL_1
+		DPR = self.PR - self.PR_1
+
+		if DPL >= 18:
+			DPL = DPL - 6
+
+		self.delta_SL = DPL*(2*np.pi*0.2)/1500.0
+		self.delta_SR = DPR*(2*np.pi*0.2)/1500.0
 
                 #POSICION
 		self.delta_s = (self.delta_SR + self.delta_SL)/2.0;
@@ -167,9 +173,9 @@ class ubication(object):
 		#self.theta = self.theta + self.delta_theta
 		self.theta = self.kf_theta + self.delta_theta
 
-		while self.theta > np.pi:
+		if self.theta > np.pi:
 			self.theta -= 2*np.pi
-		while self.theta < -np.pi:
+		if self.theta < -np.pi:
 			self.theta += 2*np.pi
 
 		self.delta_PX = self.delta_s * np.cos(self.theta + self.delta_theta/2.0)
@@ -220,13 +226,17 @@ class ubication(object):
 			odom.twist.twist.angular.x = self.WL # Velocidad angular motor izquierdo
 			odom.twist.twist.angular.y = self.WR # Velocidad angular motor derecho
 
-			odom.twist.twist.linear.x = self.WL * 0.2 #VELOCIDAD LINEAL RUEDAS IZQUIERDA
-			odom.twist.twist.linear.y = self.WR * 0.2 #VELOCIDAD LINEAL RUEDAS DERECHA
+			odom.twist.twist.linear.x = self.delta_SL #self.WL * 0.2 #VELOCIDAD LINEAL RUEDAS IZQUIERDA
+			odom.twist.twist.linear.y = self.delta_SR #self.WR * 0.2 #VELOCIDAD LINEAL RUEDAS DERECHA
 
 			odom.pose.pose.position.x = self.PX
 			odom.pose.pose.position.y = self.PY
 			odom.pose.pose.position.z = self.theta
 			self.pub.publish(odom)
+
+			#print("LEFT", self.delta_SL)
+			#print("RIGHT", self.delta_SR)
+			#print " "
 
 			rate.sleep()
 

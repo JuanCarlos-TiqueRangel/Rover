@@ -61,8 +61,8 @@ class roboteq(object):
 					self.I_right = float(data[1])
 
 					#encoder pulses
-					self.enc_left = float(data[3])
-					self.enc_right = float(data[4])
+					self.enc_left = float(data[4])
+					self.enc_right = float(data[3])
 
 					#program counter
 					self.counter = int(data[5])
@@ -74,7 +74,9 @@ class roboteq(object):
                                 self.pub.publish(msg)
 
 				#self.rate.sleep()
-                                #print msg
+                                #print ("left",self.enc_left)
+				#print ("right",self.enc_right)
+				#print " "
 
 if __name__=='__main__':
 

@@ -96,72 +96,101 @@ class adq_datos(object):
 
 		self.A = np.array([[0.9494, -0.07311, 0],
 				[0.04874, 0.9982, 0],
-				[0.001229, 0.04997, 1]])
+				[0.001229, 0.04997, 0]])
 
 		self.B = np.array([ [0.04874],[0.001229],[2.057e-05] ])
 		self.C = np.array([ [0, 0, 1] ])
 
-		self.Np = 299
-		self.Nc = 300
+		self.Np = 3
+		self.Nc = 2
 
 		##======================= MODELO EXTENDIDO =================================##
-		[self.m1,self.n1] = self.C.shape
-		[self.n1,self.n_in] = self.B.shape
-		self.A_e = np.identity(self.n1+self.m1)
-		self.A_e[0:self.n1,0:self.n1] = self.A
-		self.A_e[self.n1:self.n1+self.m1,0:self.n1] = np.dot(self.C,self.A)
-		self.B_e = np.zeros([self.n1+self.m1,self.n_in])
-		self.B_e[0:self.n1,:] = self.B
-		self.B_e[self.n1:self.n1+self.m1,:] = np.dot(self.C,self.B)
-		self.C_e = np.zeros([self.m1,self.n1+self.m1])
-		self.C_e[:,self.n1:self.n1+self.m1] = np.ones([self.m1,self.m1])
+		[self.m,self.n] = self.C.shape
+		[self.n,self.p] = self.B.shape
 
-		[self.n,self.n_in] = self.B_e.shape
-		self.xm = np.zeros(self.B.shape)
-		self.Xf = np.zeros([self.n,1])
+		self.M_e = np.zeros([self.n+self.p,self.n+self.p])
+		self.M_e[0:self.n,0:self.n] = self.A
+		self.M_e[0:self.n,[self.n]] = self.B
+		self.M_e[self.n,0:self.n] = np.zeros([self.p,self.n])
+		self.M_e[self.n,self.n] = np.identity(self.p)
+
+		self.N_e = np.zeros([self.n+self.p, self.p])
+		self.N_e[0:self.n,0:self.p] = self.B
+		self.N_e[self.n:self.n+self.p,0:self.p] = np.identity(self.p)
+
+		self.Q_e = np.zeros([self.m,self.n+self.p])
+		self.Q_e[0:self.m,0:self.n] = self.C
+		self.Q_e[0:self.m,self.n:self.n+self.p-1] = np.zeros([self.m,self.p])
+
+		#print ("M",self.M_e)
+		#print ("N",self.N_e)
+		#print ("Q",self.Q_e)
+
+		#[self.n,self.n_in] = self.B_e.shape
+		#self.xm = np.zeros(self.B.shape)
+		#self.Xf = np.zeros([self.n,1])
 		self.r = 0		#SET POINT
 
-		self.h = self.C_e
-		self.F = np.dot(self.C_e,self.A_e)
+		self.Rk = 1 	# PESOS DE LA SALIDA
+		self.Qk = 0.1	# PESO DE LA ACCION DE CONTROL
 
-		for kk in range(1, self.Np):
-			self.h = np.vstack((self.h,np.dot(self.h[kk-1,:],self.A_e)))
-			self.F = np.vstack((self.F,np.dot(self.F[kk-1,:],self.A_e)))
+		self.Rw = np.dot(self.Rk,np.identity(self.Np))
+		self.Qw = np.dot(self.Qk,np.identity(self.Nc))
 
-		self.v = np.dot(self.h,self.B_e)
-		self.Phi = np.zeros([self.Np,self.Nc]); #declare the dimension of Phi
-		self.Phi[:,0] = self.v[:,0]
-
-		for i in range(1, self.Nc):
-			self.Phi[i:,i] = self.v[0:self.Np-i:,0]
-
-		self.BarRs = np.ones([self.Np,1])
-		self.Phi_Phi = np.dot(self.Phi.T,self.Phi)
-		self.Phi_F = np.dot(self.Phi.T,self.F)
-		self.Phi_R = np.dot(self.Phi.T,self.BarRs)
-		self.xk = np.zeros(self.B_e.shape)
-		self.xk_1 = np.zeros(self.B_e.shape)
-		self.u1 = 0
 
 		## =============== VARIABLES DE LA ACCION DE CONTROL ========================##
-		self.Ky = np.dot(np.linalg.inv(self.Phi_Phi+1.0*np.identity(self.Nc)), self.Phi_R)
-		self.Ky = self.Ky = self.Ky[0,0]
 
-		self.K_mpc = np.dot(np.linalg.inv(self.Phi_Phi+1.0*np.identity(self.Nc)), self.Phi_F)
-		self.K_mpc = np.array(self.K_mpc[0,:], ndmin=2)
+		self.xk = np.zeros([self.n+1,1])
+		self.Zk = np.zeros([self.n+1,1])
 
-		self.u = 0.0
-		self.deltaU = 0.0
-		self.deltau = 0.0
-		self.y = 0.0
-		self.yk = 0.0
-		self.yk_1 = 0.0
+		self.uk = 0.0
+		self.uk_1 = 0.0
+
+		[self.m1, self.n1] = self.Q_e.shape
+		self.p1 = 1
+		self.MN2 = np.identity(self.n1)
+		self.F = np.zeros([self.Np,self.n1])
+
+		for i in range(0, self.Np):
+			self.MN2 = np.dot(self.MN2,self.M_e)
+			self.F[i,:] = np.dot(self.Q_e,self.MN2)
+
+		self.H = np.zeros([self.Np,self.Nc])
+		self.H1 = np.zeros([self.Np,1])
+
+		for i in range(1, self.Nc+1):
+			if i == 1:
+				self.H1 = np.vstack((self.Q_e,self.F[0:self.Np-i]))
+			else:
+				self.H1 = np.vstack((np.zeros([i-1,self.n1]),self.Q_e,self.F[0:self.Np-i]))
+
+			self.H[:,[i-1]] = np.dot(self.H1,self.N_e)
+
+		K1 = np.dot(self.H.T,self.Rw)
+		K2 = np.dot(K1,self.H) + self.Qw
+
+		self.K = np.dot(np.linalg.inv(K2),K1)
+		#print self.K
+
+		#self.Ky = np.dot(np.linalg.inv(self.Phi_Phi+2.5*np.identity(self.Nc)), self.Phi_R)
+		#self.Ky = self.Ky = self.Ky[0,0]
+
+		#self.K_mpc = np.dot(np.linalg.inv(self.Phi_Phi+2.5*np.identity(self.Nc)), self.Phi_F)
+		#self.K_mpc = np.array(self.K_mpc[0,:], ndmin=2)
+
+		#self.u = 0.0
+		#self.deltaU = 0.0
+		#self.deltau = 0.0
+		#self.y = 0.0
+		#self.yk = 0.0
+		#self.yk_1 = 0.0
 		##===========================================================================##
 		# 			FIN DE LAS VARIABLES DEL CONTROLADOR		      #
 		##===========================================================================##
 
 		## VARIABLES DEL CONTROL DE VELOCIDAD
 		self.Vd = 0.0
+
 
                 rospy.Subscriber('/channels', JointState, self.synchronize_pwm)
 		rospy.Subscriber("/kalman_filter", Odometry, self.trajectory)
@@ -219,12 +248,12 @@ class adq_datos(object):
                 self.distancia_PT = np.sqrt(absolute_x1 + absolute_y1)
 
 		# CONTROL DE VELOCIDAD PROPORCIONAL
-		k = 1.0
+		k = 1.2
 		self.Vd = k*self.distancia_PT
 		#self.Vd = 0.5
 
-		#if self.Vd > 2.0:
-		#	self.Vd = 2.0
+		if self.Vd > 2.0:
+			self.Vd = 2.0
 
 		# ERROR GENERADOR DE INTERPUNTOS
                 if self.distancia <= 0.5:
@@ -294,7 +323,7 @@ class adq_datos(object):
                 self.refT = self.th
                 self.refS = self.st
 
-		print str(self.RC1) + "\t" + str(self.RC2)
+		#print str(self.RC1) + "\t" + str(self.RC2)
 
 	def automatico(self):
 		#CALIBRAR MAGNETOMETRO
@@ -342,7 +371,19 @@ class adq_datos(object):
 			#if self.count >= 300:
 			#	self.r = -0.1
 
-			self.r = self.angle_to_goal
+			self.Zk[0,0] = self.xk[0,0]
+			self.Zk[1,0] = self.xk[1,0]
+			self.Zk[2,0] = self.xk[2,0]
+			self.Zk[3,0] = self.uk_1
+
+			#self.Zk[0:self.n,0] = self.xk
+			#self.Zk[self.n,0] = self.uk_1
+
+			#print self.Zk.shape
+			#print self.K.shape
+			#print self.F.shape
+
+			self.r = -1.50 #self.angle_to_goal
 
 			error1 = self.r - self.yaw
                         if error1 > np.pi:
@@ -350,9 +391,15 @@ class adq_datos(object):
                         if error1 < -np.pi:
                                 self.r = self.r + 2*np.pi
 
-			self.deltaU = self.Ky*self.r - np.dot(self.K_mpc, self.xk)
+			# ACCION DE CONTROL
+			du1 = self.r - np.dot(self.F,self.Zk)
+			self.deltaU =  np.dot(self.K, du1)
 			self.deltau = self.deltaU[0,0]
-			#self.u = self.deltau + self.u
+			self.uk = self.deltau + self.uk_1
+
+			#print self.uk
+
+			print self.xk.shape
 
 			self.yk = self.yaw
 
@@ -361,8 +408,9 @@ class adq_datos(object):
 			self.xk[2,0] = self.delta_pos
 			self.xk[3,0] = self.yk
 
+
 			# SELECCION DEL ANGULO ADECUADO PARA UN ERROR MAS PEQUENO
-			#error1 = self.r - self.yk
+			error1 = self.r - self.yk
 			#if error1 > np.pi:
 			#	self.xk[3,0] = self.yk - 2*np.pi
 			#if error1 < -np.pi:
@@ -373,39 +421,44 @@ class adq_datos(object):
 			#if error1 > np.pi and self.yk < -np.pi/2.0:
 			#	self.xk[3,0] = error1
 
+			#if error1 > np.pi:
+			#	self.r = self.r - 2*np.pi
+			#if error1 < -np.pi:
+			#	self.r = self.r + 2*np.pi
+
 			# LINEALIZAR LA ACCION DE CONTROL A PWM
-			du = 31.75*self.deltaU + 127
-			if du >= 254.0:
-				du = 254.0
-			if du <= 5.0:
-				du = 5.0
+			uk = 31.75*self.uk + 127
+			if uk >= 254.0:
+				uk = 254.0
+			if uk <= 5.0:
+				uk = 5.0
 
 			#if self.deltaU >= 254.0:
 			#	self.deltaU = 254.0
 			#if self.deltaU <= 0.1:
 			#	self.deltaU = 0.1
 
-                        if self.u >= 254.0:
-                                self.u = 254.0
-                        if self.u <= 0.1:
-                                self.u = 0.1
+                        #if self.u >= 254.0:
+                        #        self.u = 254.0
+                        #if self.u <= 0.1:
+                        #        self.u = 0.1
 
-			#self.manual()
+			self.manual()
 
 			# LINEALIZAR LA ACCION DE CONTROL DE VELOCIDAD A PWM
 			Vd = -36.666*self.Vd + 127
 			if Vd >= 127.0:
 				vd = 127.0
-			if Vd <= 32.0:
-				Vd = 32.0
+			if Vd <= 72.0:
+				Vd = 72.0
 
                         if self.ini + 2 > len(self.goalx):
                                 pi.set_PWM_dutycycle(12, 127.5)
                                 pi.set_PWM_dutycycle(13, 127.5)
-                                sys.exit(0)
+                                #sys.exit(0)
                         else:
-                                pi.set_PWM_dutycycle(12, du)
-                                pi.set_PWM_dutycycle(13, Vd)
+                                pi.set_PWM_dutycycle(12, uk)
+                                pi.set_PWM_dutycycle(13, 127.5)
 
 			#pi.set_PWM_dutycycle(12, du)
 			#pi.set_PWM_dutycycle(13, Vd)
@@ -421,6 +474,7 @@ class adq_datos(object):
 			self.w_1 = self.w
 			self.yk_1 = self.yk
 			self.acc_1 = self.acc
+			self.uk_1 = self.uk
 
 			#print("control u", self.u)
 			#print("Control_delta", self.deltaU)
@@ -436,7 +490,7 @@ class adq_datos(object):
 
 			mpc.actual.positions = [self.pos_x, self.pos_y, self.yaw]
 			mpc.actual.velocities = [Vd, self.Vd]
-			mpc.actual.effort = [du, self.deltaU[0,0]]
+			mpc.actual.effort = [uk, self.uk]
 
 			mpc.error.positions = [self.distancia_PT, self.distancia]
 			mpc.error.effort = [error1]
@@ -447,8 +501,8 @@ class adq_datos(object):
                 	print("yaw",self.yaw)
                 	#print("angulo_coordenada", self.alpha)
 			print("speed", Vd)
-                	print("control_MPC_du", du)
-                	print("control_MPC_U", self.u)
+                	print("control_MPC_U", uk)
+                	#print("control_MPC_U", self.u)
                 	#print("error1:",error1)
                 	#print("error2:",error2)
                 	print("error1:",error1)
@@ -488,8 +542,8 @@ if __name__=='__main__':
 		print "Nodo PWM creado"
 		cv.main()
 
-	except AttributeError:
-		print "error_de_atributo"
+	except AttributeError, a:
+		print "error_de_atributo: " + str(a)
 		pi.set_PWM_dutycycle(13, 125.5)
 		pi.set_PWM_dutycycle(12, 125.5)
 

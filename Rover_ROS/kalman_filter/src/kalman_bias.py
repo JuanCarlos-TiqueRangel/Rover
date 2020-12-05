@@ -38,29 +38,40 @@ class Kalman(object):
 		self.w = 0
 
 		#KALMAN VARIABLES
-		self.A = np.array([ [1,0,0,self.ts,0],
-					[0,1,0,0,self.ts],
-					[0,0,1,0,0],
-					[0,0,0,1,0],
-					[0,0,0,0,1] ])
+		self.A = np.array([ [1,0,0,self.ts,0,-self.ts**2,0],
+					[0,1,0,0,self.ts,0,-self.ts**2],
+					[0,0,1,0,0,0,0],
+					[0,0,0,1,0,0,0],
+					[0,0,0,0,1,0,0],
+					[0,0,0,0,0,1,0],
+					[0,0,0,0,0,0,1]])
 
-		self.Xkp = np.zeros([5,1])
-		self.Xk = np.zeros([5,1])
-		self.Xk_1 = np.zeros([5,1])
+		self.Xkp = np.zeros([7,1])
+		self.Xk = np.zeros([7,1])
+		self.Xk_1 = np.zeros([7,1])
+		#self.Xk_1 = np.array([[0],
+		#			[0],
+		#			[0],
+		#			[0],
+		#			[0],
+		#			[-0.00075],
+		#			[0.00050]])
 
                 self.B = np.array([ [0,self.ts**2,0],
                                         [0,0,self.ts**2],
                                         [self.ts,0,0],
                                         [0,self.ts,0],
-                                        [0,0,self.ts] ])
+                                        [0,0,self.ts],
+					[0,0,0],
+					[0,0,0]])
 
 		self.U = np.zeros([3,1])
 		self.U_1 = np.zeros([3,1])
 
-		self.Pkp = np.zeros([5,5])
-		self.Pk = np.zeros([5,5])
+		self.Pkp = np.zeros([7,7])
+		self.Pk = np.zeros([7,7])
 		#self.Pk_1 = np.zeros([5,5])
-		self.Pk_1 = np.identity(5)*100
+		self.Pk_1 = np.identity(7)*100
 
 		self.Yk = np.zeros([6,1])
 		self.Y = np.zeros([6,1])
@@ -73,32 +84,34 @@ class Kalman(object):
 				[0,0,0,0,0],
 				[0,0,0,0,0] ])
 
-		self.C = np.array([ [1,0,0,0,0],
-					[0,1,0,0,0],
-					[0,0,1,0,0],
-					[1,0,0,0,0],
-					[0,1,0,0,0],
-					[0,0,1,0,0] ])
+		self.C = np.array([ [1,0,0,0,0,0,0],
+					[0,1,0,0,0,0,0],
+					[0,0,1,0,0,0,0],
+					[1,0,0,0,0,0,0],
+					[0,1,0,0,0,0,0],
+					[0,0,1,0,0,0,0]])
 
-		self.K = np.zeros([5,6])
-		self.K1 = np.zeros([5,6])
-		self.K2 = np.zeros([6,6])
+		self.K = np.zeros([7,6])
+		self.K1 = np.zeros([7,6])
+		self.K2 = np.zeros([7,7])
 
-		self.I = np.identity(5)
+		self.I = np.identity(7)
 
 		#MATRIZ DE COVARIANCE
-		self.R = np.array([ [1,0,0,0,0,0],		# 1.1011
-					[0,1,0,0,0,0],	# 0.7946
+		self.R = np.array([ [0.7,0,0,0,0,0],		# 1.1011
+					[0,0.7,0,0,0,0],	# 0.7946
 					[0,0,0.001,0,0,0],	# 0.0293
 					[0,0,0,0.03,0,0],	# 0.0740
 					[0,0,0,0,0.03,0],	# 0.1955
 					[0,0,0,0,0,0.01] ])
 
-                self.Q = np.array([ [0.2,0,0,0,0],
-                                        [0,0.2,0,0,0],
-                                        [0,0,0.1,0,0],
-                                        [0,0,0,0.1,0],
-                                        [0,0,0,0,0.1] ])
+                self.Q = np.array([ [0.2,0,0,0,0,0,0],
+                                        [0,0.2,0,0,0,0,0],
+                                        [0,0,0.1,0,0,0,0],
+                                        [0,0,0,0.1,0,0,0],
+                                        [0,0,0,0,0.1,0,0],
+					[0,0,0,0,0,0,0.06],
+					[0,0,0,0,0,0,0.11]])
 		self.R1 = []
 
 		#VARIABLES ODOMETRIA
@@ -124,7 +137,7 @@ class Kalman(object):
 		rospy.Subscriber('/mag_calibrated', MagneticField, self.compass)
 
 	def compass(self,data):
-		self.mag_yaw = data.magnetic_field.z
+		#self.mag_yaw = data.magnetic_field.z
 		self.mag_field_x = data.magnetic_field.x
 		self.mag_field_y = data.magnetic_field.y
 
@@ -139,8 +152,8 @@ class Kalman(object):
 
 		#gps_dx = self.gps_distance * np.cos(self.mag_yaw + np.pi)
 		#gps_dy = self.gps_distance * np.sin(self.mag_yaw + np.pi)
-		gps_dx = self.gps_vel * np.cos(self.mag_yaw)
-		gps_dy = self.gps_vel * np.sin(self.mag_yaw)
+		gps_dx = self.gps_vel * np.cos(self.yaw)
+		gps_dy = self.gps_vel * np.sin(self.yaw)
 
 		self.gpsx = self.gpsx + gps_dx
 		self.gpsy = self.gpsy + gps_dy
@@ -164,7 +177,9 @@ class Kalman(object):
 
 	def filter(self):
 		#ESTADO PREDICTOR
-		self.U = self.U_1
+                self.U = np.array([ [self.w],
+                                [self.Acc_x],
+                                [self.Acc_y] ])
 
 		self.Xkp = np.dot(self.A,self.Xk_1) + np.dot(self.B,self.U)
 		self.Pkp = np.dot(np.dot(self.A,self.Pk_1),self.A.T) + self.Q
@@ -174,7 +189,7 @@ class Kalman(object):
 		if self.Xkp[2,0] > np.pi:
 			self.Xkp[2,0] -= 2.0*np.pi
 
-		elif self.Xkp[2,0] < -np.pi:
+		if self.Xkp[2,0] < -np.pi:
 			self.Xkp[2,0] += 2.0*np.pi
 
 		#NUEVA MEDICION
@@ -189,7 +204,7 @@ class Kalman(object):
 
 		self.Y = np.array([ [self.gpsx],
 				[self.gpsy],
-				[self.mag_yaw],
+				[self.yaw],
 				[self.Pos_x],
 				[self.Pos_y],
 				[self.odom_yaw] ])
@@ -206,27 +221,15 @@ class Kalman(object):
 		error2 = self.Y[2,0] - self.Xkp[2,0]
 		if error1 < -np.pi:
 			self.Y_a[2,0] = self.Y_a[2,0] + 2*np.pi
-		elif error1 > np.pi:
+		if error1 > np.pi:
 			self.Y_a[2,0] = self.Y_a[2,0] - 2*np.pi
-
-		#error2 = self.Y[2,0] - self.Xkp[2,0]
-		#if abs(error1) > abs(error2):
-		#	self.Y_a[2,0] = error2
-		#else:
-		#	self.Y_a[2,0] = error1
 
                 error3 = self.Y[5,0] - theta_aux
 		error4 = self.Y[5,0] - self.Xkp[2,0]
 		if error3 < -np.pi:
 			self.Y_a[5,0] = self.Y_a[5,0] + 2*np.pi
-		elif error3 > np.pi:
+		if error3 > np.pi:
 			self.Y_a[5,0] = self.Y_a[5,0] - 2*np.pi
-
-                #error4 = self.Y[5,0] - self.Xkp[2,0]
-		#if abs(error3) > abs(error4):
-		#	self.Y_a[5,0] = error4
-		#else:
-		#	self.Y_a[5,0] = error3
 
 		#time.sleep(0.5)
 		# ACTUALIZACION DEL VECTOR DE ESTADO
@@ -242,7 +245,7 @@ class Kalman(object):
 
 			self.Xk[0,0] = self.gps_x - self.gps_0x
 			self.Xk[1,0] = self.gps_y - self.gps_0y
-			self.Xk[2,0] = self.mag_yaw
+			self.Xk[2,0] = self.yaw
 
 		self.count += 1
 
@@ -253,7 +256,8 @@ class Kalman(object):
 				[self.Acc_x],
 				[self.Acc_y] ])
 
-		#print(self.Xk)
+		#print(self.Xk[5])
+		#print(self.Xk[6])
 		#print " "
 
 	def main(self):

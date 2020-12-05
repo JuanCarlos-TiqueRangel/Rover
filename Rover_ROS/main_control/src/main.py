@@ -147,6 +147,9 @@ class adq_datos(object):
 	def main(self):
 		rate = rospy.Rate(20)
 		while not rospy.is_shutdown():
+			pi.set_PWM_dutycycle(13, self.avanzar)
+			pi.set_PWM_dutycycle(12, 127.5)
+
 			if 1900 < self.modo < 2100:
 				self.stop()
 
