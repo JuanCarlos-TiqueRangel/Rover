@@ -6,7 +6,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, MagneticField
 from geometry_msgs.msg import Vector3Stamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from gps_common.msg import GPSStatus, GPSFix
+from gps_common.msg import GPSFix
 
 odom = Odometry()
 
@@ -49,13 +49,6 @@ class Kalman(object):
 		self.Xkp = np.zeros([7,1])
 		self.Xk = np.zeros([7,1])
 		self.Xk_1 = np.zeros([7,1])
-		#self.Xk_1 = np.array([[0],
-		#			[0],
-		#			[0],
-		#			[0],
-		#			[0],
-		#			[-0.00075],
-		#			[0.00050]])
 
                 self.B = np.array([ [0,self.ts**2,0],
                                         [0,0,self.ts**2],
@@ -70,7 +63,6 @@ class Kalman(object):
 
 		self.Pkp = np.zeros([7,7])
 		self.Pk = np.zeros([7,7])
-		#self.Pk_1 = np.zeros([5,5])
 		self.Pk_1 = np.identity(7)*100
 
 		self.Yk = np.zeros([6,1])
@@ -98,8 +90,8 @@ class Kalman(object):
 		self.I = np.identity(7)
 
 		#MATRIZ DE COVARIANCE
-		self.R = np.array([ [0.7,0,0,0,0,0],		# 1.1011
-					[0,0.7,0,0,0,0],	# 0.7946
+		self.R = np.array([ [0.3,0,0,0,0,0],		# 1.1011
+					[0,0.3,0,0,0,0],	# 0.7946
 					[0,0,0.001,0,0,0],	# 0.0293
 					[0,0,0,0.03,0,0],	# 0.0740
 					[0,0,0,0,0.03,0],	# 0.1955
@@ -110,8 +102,8 @@ class Kalman(object):
                                         [0,0,0.1,0,0,0,0],
                                         [0,0,0,0.1,0,0,0],
                                         [0,0,0,0,0.1,0,0],
-					[0,0,0,0,0,0,0.06],
-					[0,0,0,0,0,0,0.11]])
+					[0,0,0,0,0,0.01,0],
+					[0,0,0,0,0,0,0.01]])
 		self.R1 = []
 
 		#VARIABLES ODOMETRIA
@@ -130,21 +122,15 @@ class Kalman(object):
 
 		self.tiempo = 0.0
 
-		rospy.Subscriber('/gps', Odometry, self.gps_data)
+		#rospy.Subscriber('/gps', Odometry, self.gps_data)
 		rospy.Subscriber('/gps/data', GPSFix, self.gps_info)
 		rospy.Subscriber('/odom', Odometry, self.odometria)
 		rospy.Subscriber('/yaw', Imu, self.RB_imu)
-		rospy.Subscriber('/mag_calibrated', MagneticField, self.compass)
 
-	def compass(self,data):
-		#self.mag_yaw = data.magnetic_field.z
-		self.mag_field_x = data.magnetic_field.x
-		self.mag_field_y = data.magnetic_field.y
-
-	def gps_data(self,data):
-		self.gps_x = data.pose.pose.position.x
-		self.gps_y = data.pose.pose.position.y
-		self.gps_vel2 = data.twist.twist.linear.x*0.0666
+	#def gps_data(self,data):
+	#	self.gps_x = data.pose.pose.position.x
+	#	self.gps_y = data.pose.pose.position.y
+	#	self.gps_vel2 = data.twist.twist.linear.x*0.0666
 
 	def gps_info(self,data):
 		self.gps_distance = data.track
@@ -194,13 +180,6 @@ class Kalman(object):
 
 		#NUEVA MEDICION
 		self.Yk = np.dot(self.C,self.Xk_1)
-
-		#self.Y = np.array([ [self.gps_x - self.gps_0x],
-		#		[self.gps_y - self.gps_0y],
-		#		[self.mag_yaw],
-		#		[self.Pos_x],
-		#		[self.Pos_y],
-		#		[self.odom_yaw] ])
 
 		self.Y = np.array([ [self.gpsx],
 				[self.gpsy],
@@ -262,7 +241,7 @@ class Kalman(object):
 
 	def main(self):
 
-                rate = rospy.Rate(20)
+		rate = rospy.Rate(1/self.ts)
                 while not rospy.is_shutdown():
 
 			self.filter()
@@ -279,7 +258,7 @@ class Kalman(object):
 
 			self.pub.publish(odom)
 
-			print(odom)
+			#print(odom)
 			#print " "
 
 			rate.sleep()

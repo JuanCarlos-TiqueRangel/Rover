@@ -65,10 +65,10 @@ class ubication(object):
 		self.yaw = euler[2]
 
 		#ANGULAR VELOCITY
-		self.w = data.angular_velocity.z #- 0.02
+		self.wf = data.angular_velocity.z #- 0.02
 
 		# FILTER LOW PASS FOR ANGULAR VELOCITY
-		self.wf = 0.2452*self.w + 0.2452*self.w_1 + 0.5095*self.wf
+		#self.wf = 0.2452*self.w + 0.2452*self.w_1 + 0.5095*self.wf
 		#self.wf = 0.0009447*self.w + 0.001889*self.w_1 + 0.0009447*self.w_2 + 1.911*self.w_f_1 - 0.915*self.w_f_2
 
 		if abs(self.wf) < 0.05:

@@ -17,7 +17,7 @@ class GPS(object):
 
     	def __init__(self):
 		#self.gps = serial.Serial("/dev/tty_gps", baudrate = 115200)
-
+		#self.ts = 0.0
         	#Geometria del elipsoide
 		self.a = 6378137.0 # radius of the earth in metters
 		self.b = 6356752.31414
@@ -144,7 +144,7 @@ class GPS(object):
 	def ubicacion(self):
 
 		if gps_.isOpen():
-			rate = rospy.Rate(15)
+			rate = rospy.Rate(20)
 			while not rospy.is_shutdown():
 				try:
 					self.gps_read(gps_)

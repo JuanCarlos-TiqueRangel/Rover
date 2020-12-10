@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import traceback
 import serial
 import rospy
 import numpy as np
@@ -21,7 +22,7 @@ class adq_datos(object):
 		self.pub = rospy.Publisher('/main_node', JointState, queue_size=10)
 		self.pub1 = rospy.Publisher('/MPC', JointTrajectoryControllerState, queue_size=10)
 
-		self.Ts = 0.05
+		self.Ts = 0.2
 
 		self.modo = 0
 		self.calibration = 0
@@ -66,14 +67,22 @@ class adq_datos(object):
 		self.PT_y = 0.0
 
 		self.contador = 0
-		self.angle_to_goal = 0.0
+		#self.angle_to_goal = 0.0
 		self.distancia = 0.0
 		self.distancia_PT = 0.0
 
-		#self.goalx = [0.0, 5.0, 5.0, 1.0, 1.0, 5.0, 0.0]
-		#self.goaly = [0.0, 0.0, -3.0, -3.0, -6.0, -6.0, 0.0]
-		self.goalx = [0.0, 0.0, 5.0, 5.0, 0.0] #, 1.0, 0.0]
-		self.goaly = [0.0, -10.0, -10.0, 0.0, 0.0] #, -5.0, 0.0]
+		#self.goalx = [0.0, -10.0, -1.0, 0.0] #1.0, 1.0, 10.0, 0.0]
+		#self.goaly = [0.0, -10.0, -15.0, 0.0] #-5.0, -10.0, -10.0, 0.0]
+
+                #self.goalx = [0.0, -10.0, -10.0, 0.0]
+                #self.goaly = [0.0, 0.0, -10.0, 0.0]
+
+		self.goalx = [0.0, 10.0, 10.0, 1.0, 1.0, 10.0, 0.0] #, 1.0, 0.0]
+		self.goaly = [0.0, 0.0, -5.0, -5.0, -10.0, -10.0, 0.0] #, -5.0, 0.0]
+
+                #self.goalx = [0.0, -5.0, -1.0, 6.0, 10.0, -3.0, 1.0, 10.0]
+                #self.goaly = [0.0, -5.0, -9.0, -2.0, -6.0, -19.0, -23.0, -14.0]
+
 		self.ini = 0
 
 		##===========================================================================##
@@ -87,81 +96,76 @@ class adq_datos(object):
 		self.acc_1 = 0.0
 		self.delta_acc = 0.0
 
-		#self.A = np.array([[2.292, -1.61, 0.3177],
-                #		[1, 0, 0],
-                #		[0, 1, 0]])
+		self.Ad = np.array([[0.0234, -1.8745, 0],
+				[0.0799, 0.7381, 0],
+				[0.0112, 0.1797, 1]])
 
-		#self.B = np.array([ [1],[0],[0] ])
-		#self.C = np.array([ [5.937e-05, 0.0001825, 3.355e-05] ])
-
-                self.A = np.array([[0.0234, -1.8745, 0],
-                                [0.0799, 0.7381, 0],
-                                [0.0112, 0.1797, 1]])
-
-                self.B = np.array([ [0.0464],[0.0065],[0.0005] ])
-                self.C = np.array([ [0, 0, 1] ])
+		self.Bd = np.array([ [0.0464],[0.0065],[0.0005] ])
+		self.Cd = np.array([ [0, 0, 1] ])
 
 		self.Np = 30
-		self.Nc = 29
+		self.Nc = 25
 
 		##======================= MODELO EXTENDIDO =================================##
-		[self.m1,self.n1] = self.C.shape
-		[self.n1,self.n_in] = self.B.shape
-		self.A_e = np.identity(self.n1+self.m1)
-		self.A_e[0:self.n1,0:self.n1] = self.A
-		self.A_e[self.n1:self.n1+self.m1,0:self.n1] = np.dot(self.C,self.A)
-		self.B_e = np.zeros([self.n1+self.m1,self.n_in])
-		self.B_e[0:self.n1,:] = self.B
-		self.B_e[self.n1:self.n1+self.m1,:] = np.dot(self.C,self.B)
-		self.C_e = np.zeros([self.m1,self.n1+self.m1])
-		self.C_e[:,self.n1:self.n1+self.m1] = np.ones([self.m1,self.m1])
+		[self.n,self.p] = self.Bd.shape
+		[self.m,self.n_in] = self.Cd.shape
 
-		[self.n,self.n_in] = self.B_e.shape
-		self.xm = np.zeros(self.B.shape)
-		self.Xf = np.zeros([self.n,1])
-		self.r = 0		#SET POINT
+		self.M = np.identity(self.n+self.m)
+		self.M[0:self.n,0:self.n] = self.Ad
+		self.M[0:self.n,self.n] = self.Bd[:,0]
 
-		self.h = self.C_e
-		self.F = np.dot(self.C_e,self.A_e)
+		self.N = np.zeros([self.n+self.p,self.p])
+		self.N[0:self.n,0] = self.Bd[:,0]
+		self.N[self.n,0] = 1
 
-		for kk in range(1, self.Np):
-			self.h = np.vstack((self.h,np.dot(self.h[kk-1,:],self.A_e)))
-			self.F = np.vstack((self.F,np.dot(self.F[kk-1,:],self.A_e)))
+		self.Q = np.zeros([self.p,self.n+self.p])
+		self.Q[0,0:self.n] = self.Cd
 
-		self.v = np.dot(self.h,self.B_e)
-		self.Phi = np.zeros([self.Np,self.Nc]); #declare the dimension of Phi
-		self.Phi[:,0] = self.v[:,0]
+		self.Rk = 2.5
+		self.Qk = 0.0006
 
-		for i in range(1, self.Nc):
-			self.Phi[i:,i] = self.v[0:self.Np-i:,0]
+		self.Rw = np.dot(self.Rk,np.identity(self.Np))
+		self.Qw = np.dot(self.Qk,np.identity(self.Nc))
 
-		self.BarRs = np.ones([self.Np,1])
-		self.Phi_Phi = np.dot(self.Phi.T,self.Phi)
-		self.Phi_F = np.dot(self.Phi.T,self.F)
-		self.Phi_R = np.dot(self.Phi.T,self.BarRs)
-		self.xk = np.zeros(self.B_e.shape)
-		self.xk_1 = np.zeros(self.B_e.shape)
-		self.u1 = 0
+		[self.m1,self.n1] = self.Q.shape
+		self.p1 = 1
+		self.MN2 = np.identity(self.n1)
+		self.F = np.zeros([self.Np,self.n1])
+
+		for i in range(0, self.Np):
+			self.MN2 = np.dot(self.MN2,self.M)
+			self.F[i,:] = np.dot(self.Q,self.MN2)
+
+		self.H = np.zeros([self.Np,self.Nc])
+
+		for k in range(0, self.Nc):
+			self.H[k:,k] = self.F[0:self.Np-k,3]
+
+		self.ku1 = np.dot(self.H.T,self.Rw)
+		self.ku2 = np.dot(self.ku1,self.H) + self.Qw
+		self.ku = np.dot(np.linalg.inv(self.ku2),self.ku1)
+
+		#print ("H",self.H)
+		#print ("F",self.F)
+		#print ("Q",self.Q)
 
 		## =============== VARIABLES DE LA ACCION DE CONTROL ========================##
-		self.Ky = np.dot(np.linalg.inv(self.Phi_Phi+1.0*np.identity(self.Nc)), self.Phi_R)
-		self.Ky = self.Ky = self.Ky[0,0]
 
-		self.K_mpc = np.dot(np.linalg.inv(self.Phi_Phi+1.0*np.identity(self.Nc)), self.Phi_F)
-		self.K_mpc = np.array(self.K_mpc[0,:], ndmin=2)
+		self.xk = np.zeros([self.Ad.shape[0],1])
+		self.xk_1 = np.zeros([self.Ad.shape[0],1])
 
-		self.u = 0.0
-		self.deltaU = 0.0
-		self.deltau = 0.0
-		self.y = 0.0
-		self.yk = 0.0
-		self.yk_1 = 0.0
+		self.zk = np.zeros(self.N.shape)
+
+		self.uk = 0.0
+		self.uk_1 = 0.0
+
 		##===========================================================================##
 		# 			FIN DE LAS VARIABLES DEL CONTROLADOR		      #
 		##===========================================================================##
 
 		## VARIABLES DEL CONTROL DE VELOCIDAD
 		self.Vd = 0.0
+
 
                 rospy.Subscriber('/channels', JointState, self.synchronize_pwm)
 		rospy.Subscriber("/kalman_filter", Odometry, self.trajectory)
@@ -174,6 +178,11 @@ class adq_datos(object):
 		self.pos_y = data.pose.pose.position.y
 		self.yaw = data.pose.pose.position.z
 		self.w = data.twist.twist.angular.z
+
+		if self.yaw > 3.0892:
+			self.yaw = np.pi
+		if self.yaw < -3.0892:
+			self.yaw = -np.pi
 		## ===========================================================================##
 
 		# WAYPOINTS
@@ -189,8 +198,8 @@ class adq_datos(object):
 		self.alpha = np.arctan2(delta_wpy, delta_wpx)
 
 		# ============================== INTERPUNTO ===================================##
-		self.PT_x = self.Ts*1.0*self.contador*np.cos(self.alpha) + self.wpx_1
-		self.PT_y = self.Ts*1.0*self.contador*np.sin(self.alpha) + self.wpy_1
+		self.PT_x = self.Ts*1.3*self.contador*np.cos(self.alpha) + self.wpx_1
+		self.PT_y = self.Ts*1.3*self.contador*np.sin(self.alpha) + self.wpy_1
 		#self.PT_x = self.Ts*1.5*self.contador*np.cos(self.alpha) + self.wpx_1
 		#self.PT_y = self.Ts*1.5*self.contador*np.sin(self.alpha) + self.wpy_1
 		##=============================================================================##
@@ -198,8 +207,8 @@ class adq_datos(object):
 		#self.contador = self.contador + 1
 
 		# ANGULO DE CONTROL
-		self.angle_to_goal = np.arctan2(self.PT_y - self.pos_y, self.PT_x - self.pos_x)
-
+		#self.angle_to_goal = np.arctan2(self.PT_y - self.pos_y, self.PT_x - self.pos_x)
+		self.r = np.arctan2(self.PT_y - self.pos_y, self.PT_x - self.pos_x)
 		## ====================== DISTANCIA AL PUNTO ==================================##
                 delta_x1 = self.PT_x - self.pos_x
                 delta_y1 = self.PT_y - self.pos_y
@@ -219,15 +228,15 @@ class adq_datos(object):
                 self.distancia_PT = np.sqrt(absolute_x1 + absolute_y1)
 
 		# CONTROL DE VELOCIDAD PROPORCIONAL
-		k = 0.8
+		k = 0.6
 		self.Vd = k*self.distancia_PT
 		#self.Vd = 0.5
 
-		#if self.Vd > 2.0:
-		#	self.Vd = 2.0
+		if self.Vd > 2.0:
+			self.Vd = 2.0
 
 		# ERROR GENERADOR DE INTERPUNTOS
-                if self.distancia <= 0.5:
+                if self.distancia <= 0.2:
                         self.ini = self.ini + 1
                         #REINICIO DEL CONTADOR
                         #PARA NO SUMAR DOS VECES LA POS ANTERIOR
@@ -294,26 +303,13 @@ class adq_datos(object):
                 self.refT = self.th
                 self.refS = self.st
 
-		print str(self.RC1) + "\t" + str(self.RC2)
+		#print str(self.RC1) + "\t" + str(self.RC2)
 
 	def automatico(self):
 		#CALIBRAR MAGNETOMETRO
 		if 1000 < self.calibration < 1200:
 			pi.set_PWM_dutycycle(13, 127.5)
 			pi.set_PWM_dutycycle(12, 127.5)
-
-		#	if self.calibra < 54:
-		#		pi.set_PWM_dutycycle(12,180)
-		#		print "calibrando"
-
-		#	self.calibra = self.calibra + 1
-
-		#	if self.calibra == 54:
-		#		pi.set_PWM_dutycycle(12, 125.5)
-		#		pi.set_PWM_dutycycle(13, 125.5)
-		#		msg.name = ['Termino']
-		#		self.pub.publish(msg)
-		#		msg.name = []
 
 		##================================================================================##
 		# 			MODO CONTROL PREDICTIVO					   #
@@ -325,87 +321,88 @@ class adq_datos(object):
 			# VARIABLES DEL VECTOR DE ESTADO THETA,THETA',THETA''
 			self.delta_pos = self.yaw - self.yaw_1
 			self.delta_w = self.w - self.w_1
-
 			self.acc = self.delta_w/self.Ts
 			self.delta_acc = self.acc - self.acc_1
 
 			##=====================================================================##
 			#			CONTROL PREDICTIVO				#
 			##=====================================================================##
-			#self.count += 1
-			#if self.count >= 1:
-			#	self.r = -1.5 #self.angle_to_goal
-			#if self.count >= 100:
-			#	self.r = 3.0
-			#if self.count >= 200:
-			#	self.r = 1.5
-			#if self.count >= 300:
-			#	self.r = -0.1
 
-			self.r = self.angle_to_goal
+			if self.uk_1 > 127.5:
+				self.uk_1 = 127.5
+			if self.uk_1 < -127.5:
+				self.uk_1 = -127.5
 
+			self.zk[0,0] = self.xk[0,0]
+			self.zk[1,0] = self.xk[1,0]
+			self.zk[2,0] = self.xk[2,0]
+			self.zk[3,0] = self.uk_1
+
+			#self.Zk[0:self.n,0] = self.xk
+			#self.Zk[self.n,0] = self.uk_1
+
+			#print self.Zk.shape
+			#print self.K.shape
+			#print self.F.shape
+
+			#self.r = self.angle_to_goal
 			error1 = self.r - self.yaw
-                        if error1 > np.pi:
+			print ("error 1: ",error1)
+			print " "
+			print ("r= ",self.r)
+                        print ("yaw = ",self.yaw)
+			if error1 > np.pi:
                                 self.r = self.r - 2*np.pi
+				print ">pi"
                         if error1 < -np.pi:
                                 self.r = self.r + 2*np.pi
+				print "<pi"
+			print ("r corregido= ", self.r)
+			print " "
 
-			self.deltaU = self.Ky*self.r - np.dot(self.K_mpc, self.xk)
-			self.deltau = self.deltaU[0,0]
-			#self.u = self.deltau + self.u
+			if (self.r > (178/np.pi)*180 and self.r < (182/np.pi)*180):
+				self.r = np.pi
+			elif (self.r < (-178/np.pi)*180 and self.r > (-182/np.pi)*180):
+				self.r = -np.pi
+
+
+			# ACCION DE CONTROL
+			du1 = self.r - np.dot(self.F,self.zk)
+			self.deltaU =  np.dot(self.ku[0,:], du1)
+			self.deltau = self.deltaU[0]
+			self.uk = self.uk_1 + self.deltau
+
+			#print self.uk
+
+			#print self.xk.shape
 
 			self.yk = self.yaw
 
-			self.xk[0,0] = self.delta_acc
-			self.xk[1,0] = self.delta_w
-			self.xk[2,0] = self.delta_pos
-			self.xk[3,0] = self.yk
+			self.xk[0,0] = self.acc
+			self.xk[1,0] = self.w
+			self.xk[2,0] = self.yaw
 
-			# SELECCION DEL ANGULO ADECUADO PARA UN ERROR MAS PEQUENO
-			#error1 = self.r - self.yk
-			#if error1 > np.pi:
-			#	self.xk[3,0] = self.yk - 2*np.pi
-			#if error1 < -np.pi:
-			#	self.xk[3,0] = self.yk + 2*np.pi
-
-			#if error1 < -np.pi and self.yk > np.pi/2.0:
-			#	self.xk[3,0] = error1
-			#if error1 > np.pi and self.yk < -np.pi/2.0:
-			#	self.xk[3,0] = error1
-
-			# LINEALIZAR LA ACCION DE CONTROL A PWM
-			#du = 31.75*self.deltaU + 127
-			du = self.deltaU + 127
-			if du >= 254.0:
-				du = 254.0
-			if du <= 5.0:
-				du = 5.0
-
-			#if self.deltaU >= 254.0:
-			#	self.deltaU = 254.0
-			#if self.deltaU <= 0.1:
-			#	self.deltaU = 0.1
-
-                        if self.u >= 254.0:
-                                self.u = 254.0
-                        if self.u <= 0.1:
-                                self.u = 0.1
-
-			#self.manual()
+			self.manual()
 
 			# LINEALIZAR LA ACCION DE CONTROL DE VELOCIDAD A PWM
 			Vd = -36.666*self.Vd + 127
 			if Vd >= 127.0:
 				vd = 127.0
-			if Vd <= 32.0:
-				Vd = 32.0
+			if Vd <= 52.0:
+				Vd = 52.0
+
+			uk = self.uk + 127.5
+			if uk >= 254.0:
+				uk = 254.0
+			if uk <= 0.0:
+				uk = 1.0
 
                         if self.ini + 2 > len(self.goalx):
                                 pi.set_PWM_dutycycle(12, 127.5)
                                 pi.set_PWM_dutycycle(13, 127.5)
-                                sys.exit(0)
+                                #sys.exit(0)
                         else:
-                                pi.set_PWM_dutycycle(12, du)
+                                pi.set_PWM_dutycycle(12, uk)
                                 pi.set_PWM_dutycycle(13, Vd)
 
 			#pi.set_PWM_dutycycle(12, du)
@@ -422,14 +419,8 @@ class adq_datos(object):
 			self.w_1 = self.w
 			self.yk_1 = self.yk
 			self.acc_1 = self.acc
+			self.uk_1 = self.uk
 
-			#print("control u", self.u)
-			#print("Control_delta", self.deltaU)
-			#print("du", du)
-			#print("Angle_goal", self.r)
-			#print("Angle", self.yk)
-			#print("xk_theta", self.xk[3,0])
-			#print " "
 
 			mpc.header.stamp = rospy.get_rostime()
 			mpc.desired.positions = [self.PT_x, self.PT_y, self.wpx_1, self.wpy_1, self.wpx_2, self.wpy_2]
@@ -437,39 +428,33 @@ class adq_datos(object):
 
 			mpc.actual.positions = [self.pos_x, self.pos_y, self.yaw]
 			mpc.actual.velocities = [Vd, self.Vd]
-			mpc.actual.effort = [du, self.deltaU[0,0]]
+			mpc.actual.effort = [uk, self.uk]
 
 			mpc.error.positions = [self.distancia_PT, self.distancia]
 			mpc.error.effort = [error1]
 
 			self.pub1.publish(mpc)
 
-                	print("angle_goal",self.r)
-                	print("yaw",self.yaw)
-                	#print("angulo_coordenada", self.alpha)
-			print("speed", Vd)
-                	print("control_MPC_du", du)
-                	print("control_MPC_U", self.u)
+                	#print("angle_goal",self.r)
+                	#print("yaw",self.yaw)
+			#print("speed", Vd)
+                	#print("control_MPC_U", self.uk)
                 	#print("error1:",error1)
-                	#print("error2:",error2)
-                	print("error1:",error1)
-			print("xk", self.xk[3,0])
-                	print("self_yk", self.yk)
-                	#print("error_1", self.error_1)
-                	#print("comple:", self.comp)
-                	print("wp1", self.wpx_1,self.wpy_1)
-                	print("wp2", self.wpx_2,self.wpy_2)
-                	print("rover", self.pos_x,self.pos_y)
-                	print("PT_X PT_Y", self.PT_x, self.PT_y)
-                	print("distancia_PT0", self.distancia_PT)
-                	print("distancia", self.distancia)
-                	print("ini", self.ini)
-                	print("contador", self.contador)
-                	print " "
+			#print("xk", self.xk[2,0])
+                	#print("self_yk", self.yk)
+                	#print("wp1", self.wpx_1,self.wpy_1)
+                	#print("wp2", self.wpx_2,self.wpy_2)
+                	#print("rover", self.pos_x,self.pos_y)
+                	#print("PT_X PT_Y", self.PT_x, self.PT_y)
+                	#print("distancia_PT0", self.distancia_PT)
+                	#print("distancia", self.distancia)
+                	#print("ini", self.ini)
+                	#print("contador", self.contador)
+                	#print " "
 
 
 	def main(self):
-		rate = rospy.Rate(5)
+		rate = rospy.Rate(1/self.Ts)
 		while not rospy.is_shutdown():
 			if 1900 < self.modo < 2200:
 				self.stop()
@@ -489,18 +474,18 @@ if __name__=='__main__':
 		print "Nodo PWM creado"
 		cv.main()
 
-	except AttributeError:
-		print "error_de_atributo"
+	except AttributeError, a:
+		traceback_print_exc() #print "error_de_atributo: " + str(a)
 		pi.set_PWM_dutycycle(13, 125.5)
 		pi.set_PWM_dutycycle(12, 125.5)
 
 	except pigpio.error:
-                print "error_pigpio"
+                traceback.print_exc() #print "error_pigpio"
                 pi.set_PWM_dutycycle(13, 125.5)
                 pi.set_PWM_dutycycle(12, 125.5)
 
 	except IndexError, c:
-                print "error_IndexdeLista: " + str(c)
+                traceback.print_exc() #print "error_IndexdeLista: " + str(c)
                 pi.set_PWM_dutycycle(13, 125.5)
                 pi.set_PWM_dutycycle(12, 125.5)
 

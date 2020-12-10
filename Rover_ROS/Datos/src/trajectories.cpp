@@ -111,8 +111,8 @@ void control_data(const JointTrajectoryControllerStatePtr& mpc){
 	angle_goal = mpc->desired.effort[0];
 	Vd = mpc->actual.velocities[1];
 	Vd_pwm = mpc->actual.velocities[0];
-	du = mpc->actual.velocities[1];
-	du_pwm = mpc->actual.velocities[0];
+	du = mpc->actual.effort[1];
+	du_pwm = mpc->actual.effort[0];
 	error_yaw = mpc->error.effort[0];
 	distancia_PT = mpc->error.positions[0];
 	distancia_wp = mpc->error.positions[1];

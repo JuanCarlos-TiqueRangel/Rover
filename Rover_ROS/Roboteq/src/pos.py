@@ -16,6 +16,7 @@ class ubication(object):
                 self.pub = rospy.Publisher('/odom', Odometry, queue_size=10)
 
 		self.enc_ts = 0.05
+		self.ts = 0.05
 
 		self.PL = 0.0
 		self.PL_1 = 0.0
@@ -212,7 +213,7 @@ class ubication(object):
 
 	def main(self):
 
-		rate = rospy.Rate(20)
+		rate = rospy.Rate(1/self.ts)
 		while not rospy.is_shutdown():
 			#print ("delta_X", self.delta_PX)
 			#print ("delta_Y", self.delta_PY)
