@@ -38,7 +38,7 @@ sudo apt-get install screen
 sudo apt-get install ros-kinetic-gps-common
 ```
 - Install MTi rosnode
-```sh
+```
 cd ~/catkin_ws/src
 git clone https://github.com/ethz-asl/ethzasl_xsens_driver.git
 cd ~/catkin_ws/
@@ -48,6 +48,7 @@ Xsens company now create his own node in ROS, to download them, first need downl
 
 ## Functios to add on Raspberry in a .bashrc file
 
+- The next function it's for move the Rover to place that want to do Autonomous navigation
 ```
 function manual(){
  /usr/bin/python /catkin_ws/src/rc_control/src/control.py &
@@ -56,23 +57,26 @@ function manual(){
  /usr/bin/python /catkin_ws/src/main_control/src/mpc_corregido.py 
  sleep 10
  }
+```
+And this one it's for execute the algorithms necessaries for trajectory tracking. 
 
+```
 function automatico(){
-/usr/bin/python /catkin_ws/src/imu/src/imu.py &
-sleep 10
+ /usr/bin/python /catkin_ws/src/imu/src/imu.py &
+ sleep 10
 
-/usr/bin/python /catkin_ws/src/gps/src/gps.py &
-sleep 10
+ /usr/bin/python /catkin_ws/src/gps/src/gps.py &
+ sleep 10
 
-/usr/bin/python /catkin_ws/src/Roboteq/src/read_enc.py &
-sleep 10
+ /usr/bin/python /catkin_ws/src/Roboteq/src/read_enc.py &
+ sleep 10
 
-/usr/bin/python /catkin_ws/src/Roboteq/src/pos.py &
-sleep 10
+ /usr/bin/python /catkin_ws/src/Roboteq/src/pos.py &
+ sleep 10
 
-/usr/bin/python /catkin_ws/src/kalman_filter/src/kalman_bias.py &
-sleep 10
-}
+ /usr/bin/python /catkin_ws/src/kalman_filter/src/kalman_bias.py &
+ sleep 10
+ }
 ```
 
 
