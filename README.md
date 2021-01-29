@@ -39,22 +39,39 @@ sudo apt-get install ros-kinetic-gps-common
 ```
 - Install MTi rosnode
 ```sh
-$ cd ~/catkin_ws/src
-$ git clone https://github.com/ethz-asl/ethzasl_xsens_driver.git
-$ cd ~/catkin_ws/
-$ catkin_make
+cd ~/catkin_ws/src
+git clone https://github.com/ethz-asl/ethzasl_xsens_driver.git
+cd ~/catkin_ws/
+catkin_make
 ```
+Xsens company now create his own node in ROS, to download them, first need download the [MT Software Suit](https://www.xsens.com/software-downloads) and follow the instructions into a readme files. 
 
 ## Functios to add on Raspberry in a .bashrc file
 
 ```sh
 function manual(){
- 
+/usr/bin/python /catkin_ws/src/rc_control/src/control.py &
+sleep 10
 
+/usr/bin/python /catkin_ws/src/main_control/src/mpc_corregido.py 
+sleep 10
 }
 
 function automatico(){
+/usr/bin/python /catkin_ws/src/imu/src/imu.py &
+sleep 10
 
+/usr/bin/python /catkin_ws/src/gps/src/gps.py &
+sleep 10
+
+/usr/bin/python /catkin_ws/src/Roboteq/src/read_enc.py &
+sleep 10
+
+/usr/bin/python /catkin_ws/src/Roboteq/src/pos.py &
+sleep 10
+
+/usr/bin/python /catkin_ws/src/kalman_filter/src/kalman_bias.py &
+sleep 10
 }
 ```
 
