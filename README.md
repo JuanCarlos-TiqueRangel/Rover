@@ -10,7 +10,7 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
  - Encoders
  - Control RC SPEKTRUM DX6i
  
-### Software Requirements
+## Software Requirements
   - [Ubiquity OS](https://www.ubiquityrobotics.com/)
   - [pigpio](http://abyz.me.uk/rpi/pigpio/python.html)
   - [Python 2.7](https://www.python.org/download/releases/2.7/)
