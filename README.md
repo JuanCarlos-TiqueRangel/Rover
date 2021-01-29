@@ -1,6 +1,6 @@
 
 # Rover
-A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems
+A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems.
 
 ## Hardware Requirements:
  - Raspberry pi 3B 
@@ -20,9 +20,9 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 In a terminal of Ubiquity, first create a catkin workspace folder
 
 ```sh
-$ mkdir -p ~/catkin_ws/src
-$ cd ~/catkin_ws/
-$ catkin_make
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws/
+catkin_make
 ```
 After create the workspace folder, in a /src folder download the folders of this repository [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS) 
 that contain all the necesary elements to run the autonomous navigation of the Rover
@@ -31,6 +31,20 @@ that contain all the necesary elements to run the autonomous navigation of the R
 sudo apt-get install htop
 sudo apt-get install screen
 ```
+
+## Functios to add on Raspberry in a .bashrc file
+
+```sh
+function manual{
+ 
+
+}
+
+function automatico{
+
+}
+```
+
 
 
 ***
