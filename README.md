@@ -17,7 +17,15 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
   - [numpy](https://www.numpy.org/)
 
 ## Raspberry pi 
-In a terminal of Ubiquity 
+In a terminal of Ubiquity, first create a catkin workspace folder
+
+```sh
+$ mkdir -p ~/catkin_ws/src
+$ cd ~/catkin_ws/
+$ catkin_make
+```
+After create the workspace folder, in a /src folder download the folders of this repository [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS) 
+that contain all the necesary elements to run the autonomous navigation of the Rover
 
 ```sh
 sudo apt-get install htop
