@@ -19,7 +19,7 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 ## Raspberry pi 
 In a terminal of Ubiquity, first create a catkin workspace folder
 
-```sh
+```
 mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/
 catkin_make
@@ -48,7 +48,7 @@ Xsens company now create his own node in ROS, to download them, first need downl
 
 ## Functios to add on Raspberry in a .bashrc file
 
-```sh
+```
 function manual(){
  /usr/bin/python /catkin_ws/src/rc_control/src/control.py &
  sleep 10
