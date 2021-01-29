@@ -31,16 +31,29 @@ that contain all the necesary elements to run the autonomous navigation of the R
 sudo apt-get install htop
 sudo apt-get install screen
 ```
+## Install repositories
+
+- Install gps_common as available based on the ROS distributable
+```sh
+sudo apt-get install ros-kinetic-gps-common
+```
+- Install MTi rosnode
+```sh
+cd ~/catkin_ws/src
+git clone https://github.com/ethz-asl/ethzasl_xsens_driver.git
+cd ~/catkin_ws/
+catkin_make
+```
 
 ## Functios to add on Raspberry in a .bashrc file
 
 ```sh
-function manual{
+function manual(){
  
 
 }
 
-function automatico{
+function automatico(){
 
 }
 ```
