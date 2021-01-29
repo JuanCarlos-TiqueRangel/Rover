@@ -50,12 +50,12 @@ Xsens company now create his own node in ROS, to download them, first need downl
 
 ```sh
 function manual(){
-/usr/bin/python /catkin_ws/src/rc_control/src/control.py &
-sleep 10
+ /usr/bin/python /catkin_ws/src/rc_control/src/control.py &
+ sleep 10
 
-/usr/bin/python /catkin_ws/src/main_control/src/mpc_corregido.py 
-sleep 10
-}
+ /usr/bin/python /catkin_ws/src/main_control/src/mpc_corregido.py 
+ sleep 10
+ }
 
 function automatico(){
 /usr/bin/python /catkin_ws/src/imu/src/imu.py &
