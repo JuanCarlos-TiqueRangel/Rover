@@ -1,7 +1,7 @@
 
 # Rover
 <p align='center'>
-    <img src="./config/doc/filename.gif" alt="drawing" width="800"/>
+    <img src="./config/filename.gif" alt="drawing" width="800"/>
 </p>
 
 
