@@ -1,5 +1,10 @@
 
 # Rover
+<p align='center'>
+    <img src="./config/doc/filename.gif" alt="drawing" width="800"/>
+</p>
+
+
 A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems.
  - folder with all ROS nodes [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS)
  - folder with codes from previous jobs [Rover_resource](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_resource)
