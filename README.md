@@ -67,6 +67,24 @@ catkin_make
 ```
 Xsens company now create his own node in ROS, to download them, first need download the [MT Software Suit](https://www.xsens.com/software-downloads) for linux and follow the instructions into a readme files. 
 
+## Udev Rules
+Udev is a device manager for Linux that dynamically creates and removes nodes for hardware devices. In short, it helps your computer find your robot easily. By default, hardware devices attached to your Linux (Ubuntu) PC will belong to the root user. This means that any programs (e.g. ROS nodes) running as an unpriveleged (i.e. not root) user will not be able to access them. On top of that, devices will receive names such as ttyACMx and ttyUSBx arbitrarily based on the order in which they were plugged in. Luckily, you can solve this, and more, with udev rules.[CLEARPATH](http://www.clearpathrobotics.com/assets/guides/kinetic/ros/Udev%20Rules.html). implement udev is used to identify the sensors or peripherals that are connected through the Raspeberry USB ports. 
+
+Some driver/software packages will already provide udev rules you can use. Check the /etc/udev/rules.d/ folder to see if there’s anything installed already. If the package is lazy and gives you a udev rule to install yourself, you can do this using
+
+```
+sudo cp <rule file> /etc/udev/rules.d/>
+```
+
+### Matching
+The matching part lets the udev device manager match the rule to the device you want. The manager will try to match all new devices as they get plugged in, so it’s important that the rule be specific enough to capture only the device you’re looking for, otherwise you’ll end up with a /dev/hokuyo symlink to an IMU. There are many potential matching tags, and the best way to pick the useful ones is to get all the device attributes straight from udev.
+
+Run the following cammand, inserting a <devpath> such as /dev/ttyACM0:
+```
+udevadm info -a -p $(udevadm info -q path -n <devpath>)
+```
+
+
 ## Functios to add on Raspberry in a .bashrc file
 
 - The next function it's for move the Rover to place that want to do Autonomous navigation
