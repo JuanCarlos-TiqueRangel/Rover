@@ -4,7 +4,6 @@
     <img src="./config/doc/rover.gif" alt="drawing" width="600"/>
 </p>
 
-
 A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation.
  - folder with all ROS nodes [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS)
  - folder with codes from previous jobs [Rover_resource](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_resource)
@@ -12,10 +11,11 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 ## Hardware Requirements:
  - [Raspberry pi 3B](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) 
  - [RoboteQ Motor Controller HDC2450](config/doc/hdc24xx_datasheet.pdf)
- - [Xsens MTi-30]
+ - [Xsens MTi-30](config/doc/MTi_usermanual.pdf)
  - [GPS Ublox 3DR](https://www.amazon.es/3DR-uBlox-GPS-Compass-Kit/dp/B00FNPAD4K)
- - Encoders
- - Control RC SPEKTRUM DX6i
+ - [Encoders Autonics E50s-1500](config/doc/E50S.pdf)
+ - [Control RC SPEKTRUM DX6i](config/doc/SPM6600-Manual_DX6i.pdf)
+ - [Receptor SPEKTRUM AR8000](config/doc/SPMAR8000-Manual.pdf)
  
 ## Software Requirements
   - [Ubiquity OS](https://www.ubiquityrobotics.com/)
@@ -23,7 +23,18 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
   - [Python 2.7](https://www.python.org/download/releases/2.7/)
   - [numpy](https://www.numpy.org/)
 
-## Raspberry pi 
+
+
+## Raspberry PI 
+- First download [Ubiquity_OS](https://www.ubiquityrobotics.com/) in a micro SD preferably type 10 for a good performance 
+- Insert the micro SD in a Raspberry pi 
+- Open a Terminal with Ctrl + T and write:
+```
+sudo raspi-config
+```
+<img src="./config/doc/raspi-config.gif" alt="drawing" width="600"/>
+- In Boot options disable the GUI or graphical interface, this is the best option to get the optimal performance in a Raspberry Pi. When the raspberry restart only have the comand window. 
+
 In a terminal of Ubiquity, first create a catkin workspace folder
 
 ```
