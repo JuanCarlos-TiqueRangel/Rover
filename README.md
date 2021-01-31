@@ -11,7 +11,7 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 
 ## Hardware Requirements:
  - [Raspberry pi 3B](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) 
- - [RoboteQ Motor Controller HDC2450](src="./config/doc/hdc24xx_datasheet.pdf")
+ - [RoboteQ Motor Controller HDC2450](config/doc/hdc24xx_datasheet.pdf)
  - [Xsens MTi-30]
  - [GPS Ublox 3DR](https://www.amazon.es/3DR-uBlox-GPS-Compass-Kit/dp/B00FNPAD4K)
  - Encoders
