@@ -84,7 +84,7 @@ Run the following cammand, inserting a <devpath> such as /dev/ttyACM0:
 udevadm info -a -p $(udevadm info -q path -n <devpath>)
 ```
 You will get a list of all device attributes visible to udev. looking at device /dev/ttyACM0
-```
+```sh
 KERNEL=="ttyACM0"
 SUBSYSTEM=="tty"
 DRIVER==""
