@@ -8,8 +8,8 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 
 <p align='center'>
     <img src="./config/doc/rover_1.jpg" alt="200" width="200"/>
-    <img src="./config/doc/rover_2.jpg" alt="drawing" width="200"/>
     <img src="./config/doc/rover_1.gif" alt="drawing" width="200"/>
+    <img src="./config/doc/rover_2.jpg" alt="drawing" width="200"/>
     <img src="./config/doc/rover_2.gif" alt="drawing" width="200"/>
 </p>
 
