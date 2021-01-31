@@ -31,8 +31,6 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
   - [Python 2.7](https://www.python.org/download/releases/2.7/)
   - [numpy](https://www.numpy.org/)
 
-
-
 ## Raspberry PI 
 - First download [Ubiquity_OS](https://www.ubiquityrobotics.com/) in a micro SD preferably type 10 for a good performance 
 - Insert the micro SD in a Raspberry pi 
@@ -143,6 +141,10 @@ function automatico(){
  }
 ```
 
+## System node map
+<p align='center'>
+    <img src="./config/doc/mapa_nodos.png" alt="drawing" width="600"/>
+</p>
 
 
 ***
