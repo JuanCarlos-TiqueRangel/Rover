@@ -32,7 +32,10 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
 ```
 sudo raspi-config
 ```
-<img src="./config/doc/raspi-config.gif" alt="drawing" width="600"/>
+<p align='center'>
+    <img src="./config/doc/raspi-config.png" alt="drawing" width="600"/>
+</p>
+
 - In Boot options disable the GUI or graphical interface, this is the best option to get the optimal performance in a Raspberry Pi. When the raspberry restart only have the comand window. 
 
 In a terminal of Ubiquity, first create a catkin workspace folder
