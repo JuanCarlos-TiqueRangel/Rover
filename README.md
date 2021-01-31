@@ -142,10 +142,14 @@ function automatico(){
 ```
 
 ## System node map
+The next picture is a map of all node that the system run in automatic mode
+
 <p align='center'>
     <img src="./config/doc/mapa_nodos.png" alt="drawing" width="600"/>
 </p>
 
+For more information:
+- read the document [here]
 
 ***
 ### Author:
