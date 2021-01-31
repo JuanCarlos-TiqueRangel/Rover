@@ -4,7 +4,7 @@
     <img src="./config/doc/rover.gif" alt="drawing" width="600"/>
 </p>
 
-A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation.
+A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation. Using Model Predictive Controller for follow the reference angle, Proportional error for speed and Kalman Filter to stimate the x,y position. 
  - folder with all ROS nodes [Rover_ROS](Rover_ROS)
  - folder with codes from previous jobs [Rover_resource](Rover_resource)
 
@@ -65,7 +65,7 @@ git clone https://github.com/ethz-asl/ethzasl_xsens_driver.git
 cd ~/catkin_ws/
 catkin_make
 ```
-Xsens company now create his own node in ROS, to download them, first need download the [MT Software Suit](https://www.xsens.com/software-downloads) and follow the instructions into a readme files. 
+Xsens company now create his own node in ROS, to download them, first need download the [MT Software Suit](https://www.xsens.com/software-downloads) for linux and follow the instructions into a readme files. 
 
 ## Functios to add on Raspberry in a .bashrc file
 
