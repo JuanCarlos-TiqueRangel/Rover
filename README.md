@@ -5,8 +5,8 @@
 </p>
 
 A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation.
- - folder with all ROS nodes [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS)
- - folder with codes from previous jobs [Rover_resource](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_resource)
+ - folder with all ROS nodes [Rover_ROS](Rover_ROS)
+ - folder with codes from previous jobs [Rover_resource](Rover_resource)
 
 ## Hardware Requirements:
  - [Raspberry pi 3B](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) 
