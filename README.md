@@ -10,7 +10,7 @@ A repository for a 4-wheel Skid Steering rover, based on Robotic Operative Syste
     <img src="./config/doc/rover_1.jpg" alt="200" width="200"/>
     <img src="./config/doc/rover_2.jpg" alt="drawing" width="200"/>
     <img src="./config/doc/rover.gif" alt="drawing" width="200"/>
-    <img src="./config/doc/rover_2.gif" alt="drawing" width="200"/>
+    <img src="./config/doc/rover_1.gif" alt="drawing" width="200"/>
 </p>
 
  - folder with all ROS nodes [Rover_ROS](Rover_ROS)
