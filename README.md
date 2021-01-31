@@ -1,19 +1,19 @@
 
 # Rover
 <p align='center'>
-    <img src="./config/rover.gif" alt="drawing" width="600"/>
+    <img src="./config/doc/rover.gif" alt="drawing" width="600"/>
 </p>
 
 
-A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems.
+A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation.
  - folder with all ROS nodes [Rover_ROS](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_ROS)
  - folder with codes from previous jobs [Rover_resource](https://github.com/JuanCarlos-TiqueRangel/Rover/tree/master/Rover_resource)
 
 ## Hardware Requirements:
- - Raspberry pi 3B 
- - RoboteQ Motor Controller HDC2450
- - Xsens MTi-30
- - GPS
+ - [Raspberry pi 3B](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) 
+ - [RoboteQ Motor Controller HDC2450](src="./config/doc/hdc24xx_datasheet.pdf")
+ - [Xsens MTi-30]
+ - [GPS Ublox 3DR](https://www.amazon.es/3DR-uBlox-GPS-Compass-Kit/dp/B00FNPAD4K)
  - Encoders
  - Control RC SPEKTRUM DX6i
  
