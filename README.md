@@ -45,7 +45,7 @@ mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/
 catkin_make
 ```
-After create the workspace folder, in a /src folder download the folders of this repository [Rover_ROS](Rover_Ros) 
+After create the workspace folder, in a /src folder download the folders of this repository [Rover_ROS](Rover_ROS/) 
 that contain all the necesary elements to run the autonomous navigation of the Rover
 
 ```sh
