@@ -83,7 +83,24 @@ Run the following cammand, inserting a <devpath> such as /dev/ttyACM0:
 ```
 udevadm info -a -p $(udevadm info -q path -n <devpath>)
 ```
-
+You will get a list of all device attributes visible to udev. looking at device /dev/ttyACM0
+```
+KERNEL=="ttyACM0"
+SUBSYSTEM=="tty"
+DRIVER==""
+looking at parent device '...':
+KERNELS=="3-3:1.0"
+SUBSYSTEMS=="usb"
+DRIVERS=="cdc_acm"
+ATTRS{bInterfaceClass}=="02"
+ATTRS{bInterfaceNumber}=="00"
+looking at parent device '...':
+...
+ATTRS{idVendor}=="0483"
+ATTRS{idProduct}=="5740"
+... 
+```
+    
 
 ## Functios to add on Raspberry in a .bashrc file
 
