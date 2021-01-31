@@ -3,7 +3,14 @@
 A repository for a 4-wheel Skid Steering rover, based on Robotic Operative System ROS and Python to control the perception and action systems for autonomous navigation. Using Model Predictive Controller for follow the reference angle, Proportional error for speed and Kalman Filter to stimate the x,y position. 
 
 <p align='center'>
-    <img src="./config/doc/rover.gif" alt="drawing" width="600"/>
+    <img src="./config/doc/rover_trajectory.gif" alt="drawing" width="600"/>
+</p>
+
+<p align='center'>
+    <img src="./config/doc/rover_1.jpg" alt="drawing" width="200"/>
+    <img src="./config/doc/rover_2.jpg" alt="drawing" width="200"/>
+    <img src="./config/doc/rover.gif" alt="drawing" width="200"/>
+    <img src="./config/doc/rover_2.gif" alt="drawing" width="200"/>
 </p>
 
  - folder with all ROS nodes [Rover_ROS](Rover_ROS)
