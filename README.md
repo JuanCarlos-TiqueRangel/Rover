@@ -149,7 +149,7 @@ The next picture is a map of all the nodes running on the system in automatic mo
 </p>
 
 For more information:
-- read the document [here](config/doc/Tesis_grado.pdf)
+- Read the document [here](config/doc/Tesis_grado.pdf)
 
 ***
 ### Author:
