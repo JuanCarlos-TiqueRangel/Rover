@@ -122,22 +122,14 @@ class Kalman(object):
 
 		self.tiempo = 0.0
 
-		#rospy.Subscriber('/gps', Odometry, self.gps_data)
 		rospy.Subscriber('/gps/data', GPSFix, self.gps_info)
 		rospy.Subscriber('/odom', Odometry, self.odometria)
 		rospy.Subscriber('/yaw', Imu, self.RB_imu)
-
-	#def gps_data(self,data):
-	#	self.gps_x = data.pose.pose.position.x
-	#	self.gps_y = data.pose.pose.position.y
-	#	self.gps_vel2 = data.twist.twist.linear.x*0.0666
 
 	def gps_info(self,data):
 		self.gps_distance = data.track
 		self.gps_vel = data.speed*1/15.0
 
-		#gps_dx = self.gps_distance * np.cos(self.mag_yaw + np.pi)
-		#gps_dy = self.gps_distance * np.sin(self.mag_yaw + np.pi)
 		gps_dx = self.gps_vel * np.cos(self.yaw)
 		gps_dy = self.gps_vel * np.sin(self.yaw)
 
@@ -146,20 +138,14 @@ class Kalman(object):
 
 	def RB_imu(self,data):
 		self.yaw = data.orientation.x
-
-		# Se multiplica por -1 y se suma pi/2 para ubicarlos en el plano x,y (ENU)
-		#self.mag_yaw = data.orientation.y*-1 + np.pi/2.0 + 0.28
-
 		self.Acc_x = data.linear_acceleration.x
 		self.Acc_y = data.linear_acceleration.y
 		self.w = data.angular_velocity.z
-
 
 	def odometria(self,data):
                 self.Pos_x = data.pose.pose.position.x
                 self.Pos_y = data.pose.pose.position.y
 		self.odom_yaw = data.pose.pose.position.z
-
 
 	def filter(self):
 		#ESTADO PREDICTOR
@@ -210,7 +196,6 @@ class Kalman(object):
 		if error3 > np.pi:
 			self.Y_a[5,0] = self.Y_a[5,0] - 2*np.pi
 
-		#time.sleep(0.5)
 		# ACTUALIZACION DEL VECTOR DE ESTADO
 		self.Xk = self.Xkp + np.dot(self.K, self.Y_a)
 
@@ -235,37 +220,24 @@ class Kalman(object):
 				[self.Acc_x],
 				[self.Acc_y] ])
 
-		#print(self.Xk[5])
-		#print(self.Xk[6])
-		#print " "
-
 	def main(self):
-
 		rate = rospy.Rate(1/self.ts)
                 while not rospy.is_shutdown():
-
 			self.filter()
-
                         odom.header.stamp = rospy.get_rostime()
 			odom.header.frame_id = "KALMAN FILTER"
 			odom.pose.pose.position.x = self.Xk[0,0]
 			odom.pose.pose.position.y = self.Xk[1,0]
 			odom.pose.pose.position.z = self.Xk[2,0]
 			odom.twist.twist.angular.z = self.w
-
 			odom.twist.twist.linear.x = self.gps_x - self.gps_0x
 			odom.twist.twist.linear.y = self.gps_y - self.gps_0y
 
 			self.pub.publish(odom)
-
-			#print(odom)
-			#print " "
-
 			rate.sleep()
 
 if __name__ == '__main__':
         try:
-
                 rospy.init_node("kalman_filter")
                 print "Nodo kalman_filter creado"
                 cv = Kalman()
