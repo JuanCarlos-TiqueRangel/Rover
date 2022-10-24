@@ -116,7 +116,7 @@ function manual(){
  /usr/bin/python /catkin_ws/src/rc_control/src/control.py &
  sleep 10
 
- /usr/bin/python /catkin_ws/src/main_control/src/mpc_corregido.py 
+ /usr/bin/python /catkin_ws/src/main_control/src/mpc_controller.py 
  sleep 10
  }
 ```
