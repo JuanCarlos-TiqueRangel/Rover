@@ -149,7 +149,7 @@ class adq_datos(object):
 		#print ("F",self.F)
 		#print ("Q",self.Q)
 
-		## =============== VARIABLES DE LA ACCION DE CONTROL ========================##
+		## =============== CONTROLLER VARIABLES ====================================##
 
 		self.xk = np.zeros([self.Ad.shape[0],1])
 		self.xk_1 = np.zeros([self.Ad.shape[0],1])
@@ -160,12 +160,11 @@ class adq_datos(object):
 		self.uk_1 = 0.0
 
 		##===========================================================================##
-		# 			FIN DE LAS VARIABLES DEL CONTROLADOR		      #
+		# 			END CONTROLLER VARIABLES			      #
 		##===========================================================================##
 
-		## VARIABLES DEL CONTROL DE VELOCIDAD
+		## SPEED CONTROL VARIABLES
 		self.Vd = 0.0
-
 
                 rospy.Subscriber('/channels', JointState, self.synchronize_pwm)
 		rospy.Subscriber("/kalman_filter", Odometry, self.trajectory)
@@ -203,8 +202,6 @@ class adq_datos(object):
 		#self.PT_x = self.Ts*1.5*self.contador*np.cos(self.alpha) + self.wpx_1
 		#self.PT_y = self.Ts*1.5*self.contador*np.sin(self.alpha) + self.wpy_1
 		##=============================================================================##
-
-		#self.contador = self.contador + 1
 
 		# ANGULO DE CONTROL
 		#self.angle_to_goal = np.arctan2(self.PT_y - self.pos_y, self.PT_x - self.pos_x)
@@ -404,11 +401,6 @@ class adq_datos(object):
                         else:
                                 pi.set_PWM_dutycycle(12, uk)
                                 pi.set_PWM_dutycycle(13, Vd)
-
-			#pi.set_PWM_dutycycle(12, du)
-			#pi.set_PWM_dutycycle(13, Vd)
-			#pi.set_PWM_dutycycle(12, self.RC2)
-			#pi.set_PWM_dutycycle(13, self.RC1)
 
 			self.contador = self.contador + 1
 
