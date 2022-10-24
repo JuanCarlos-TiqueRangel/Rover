@@ -16,9 +16,6 @@ gps_ = serial.Serial("/dev/tty_gps", baudrate = 115200)
 class GPS(object):
 
     	def __init__(self):
-		#self.gps = serial.Serial("/dev/tty_gps", baudrate = 115200)
-		#self.ts = 0.0
-        	#Geometria del elipsoide
 		self.a = 6378137.0 # radius of the earth in metters
 		self.b = 6356752.31414
 
@@ -81,12 +78,8 @@ class GPS(object):
 				self.Longitude = self.Longitude*-1.0
 
 			#DISTANCIA A PARTIR DE LA VELOCIDAD
-			#self.speed_m_s = float(data[7]) * 0.514444
 			self.time_utc = float(data[1])
-
-			#if self.speed_m_s < 0.5:
-			#	self.speed_m_s = 0.0
-
+			
 			self.MeasureCounting = self.MeasureCounting + 1
 			if self.MeasureCounting == 1:
 			#if self.flag_time == True:
