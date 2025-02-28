@@ -148,6 +148,10 @@ The next picture is a map of all the nodes running on the system in automatic mo
     <img src="./config/doc/mapa_nodos.png" alt="drawing" width="600"/>
 </p>
 
+### Related Paper
+
+The article: [MBPC controller for UGV Trajectory Tracking](https://ieeexplore.ieee.org/abstract/document/9633291)
+
 If you found this work usefull and help in your research, please cite our work, Thank you!
 
 ```tex
