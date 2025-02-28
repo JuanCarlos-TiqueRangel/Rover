@@ -148,8 +148,18 @@ The next picture is a map of all the nodes running on the system in automatic mo
     <img src="./config/doc/mapa_nodos.png" alt="drawing" width="600"/>
 </p>
 
-For more information:
-- Read the document [here](config/doc/Tesis_grado.pdf)
+If you found this work usefull and help in your research, please cite our work, Thank you!
+
+```tex
+@INPROCEEDINGS{9633291,
+  author={Barrero, Oscar and Tique, Juan C.},
+  booktitle={2021 IEEE 5th Colombian Conference on Automatic Control (CCAC)}, 
+  title={MBPC controller for UGV Trajectory Tracking}, 
+  year={2021},
+  pages={314-319},
+  doi={10.1109/CCAC51819.2021.9633291}}
+```
+
 
 ***
 ### Author:
